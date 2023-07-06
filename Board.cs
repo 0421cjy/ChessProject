@@ -6,54 +6,87 @@ namespace ChessProject
 {
     class Board
     {
-        private Dictionary<(eWidthAlphabet, int), Piece> m_pieces = new ();
+        private List<Piece> m_pieces = new ();
+        protected Stack<(eWidthAlphabet, int, Piece)> m_history = new ();
 
         public Piece GetPiece(eWidthAlphabet width, int height)
         {
-            m_pieces.TryGetValue((width, height), out var selectPiece);
+            var selectPiece = m_pieces.Where(p => p.Width == width && p.Height == height).SingleOrDefault();
+            if (selectPiece == null)
+            {
+                return null;
+            }
+
             return selectPiece;
         }
 
         public bool AddPiece<T>(T piece) where T : Piece
         {
-            if (m_pieces.ContainsKey((piece.Width, piece.Height)))
+            if (m_pieces.Any(p => p.Width == piece.Width && p.Height == piece.Height))
             {
                 Console.WriteLine("Add failed. duplicated position.");
                 return false;
             }
 
-            m_pieces.Add((piece.Width, piece.Height), piece);
+            m_pieces.Add(piece);
             return true;
         }
 
-        public bool MovePiece<T>(T piece) where T : Piece
+        public bool MovePiece<T>(T piece, eWidthAlphabet newWidth, int newHeight) where T : Piece
         {
             var target = m_pieces
-                .Where(p => p.Value.Color == piece.Color)
-                .Where(p => p.Key.Item1 == piece.Width && p.Key.Item2 == piece.Height)
-                .SingleOrDefault().Value;
+                .Where(p => p.Color == piece.Color)
+                .Where(p => p.Width == newWidth && p.Height == newHeight)
+                .SingleOrDefault();
             if (target != null)
             {
                 return false;
             }
 
-            if (!piece.Move(piece.Width, piece.Height))
+            var prevWidth = piece.Width;
+            var prevHeight = piece.Height;
+
+            if (!piece.Move(newWidth, newHeight))
             {
                 return false;
             }
 
-            m_pieces[(piece.Width, piece.Height)] = piece;
-
+            m_history.Push((prevWidth, prevHeight, piece));
             return true;
         }
 
         public void PrintAllBoard()
         {
-            Console.WriteLine("Print All Pieces.");
-
-            foreach(var piece in m_pieces)
+            for (eWidthAlphabet i = 0; i < eWidthAlphabet.Max; i++)
             {
-                Console.WriteLine($"{piece.Value.Color}: {piece.Key.Item1}{piece.Key.Item2} {piece.Value.ToString()}");
+                Console.Write("+---");
+            }
+
+            Console.WriteLine("+");
+
+            for (int i = 8; i > 0; i--)
+            {
+                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                {
+                    var piece = m_pieces.Where(p => p.Width == j && p.Height == i).SingleOrDefault();
+                    if (piece != null)
+                    {
+                        Console.Write($"| {piece}");
+                    }
+                    else
+                    {
+                        Console.Write($"|   ");
+                    }
+                }
+
+                Console.WriteLine("|");
+
+                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                {
+                    Console.Write("+---");
+                }
+
+                Console.WriteLine("+");
             }
         }
     }

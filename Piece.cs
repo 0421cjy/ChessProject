@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ChessProject
 {
@@ -6,6 +7,7 @@ namespace ChessProject
     {
         White,
         Black,
+        Max,
     }
 
     public enum eWidthAlphabet
@@ -18,11 +20,12 @@ namespace ChessProject
         f,
         g,
         h,
+        Max,
     }
 
     public abstract class Piece
     {
-        private eTeamColor m_color;
+        protected eTeamColor m_color;
         protected eWidthAlphabet m_width;
         protected int m_height;
 
@@ -54,35 +57,141 @@ namespace ChessProject
 
         public override bool Move(eWidthAlphabet width, int height)
         {
-            if (m_width != width) return false;
             if (height <= m_height) return false;
+            if (m_height + 2 < height) return false;
 
-            if (height == m_height + 2 && height != 2)
+            if (height == m_height + 2)
             {
-                return false;
+                if (m_height != Program.PAWN_START_HEIGHT)
+                {
+                    return false;
+                }
             }
-            else if (height != m_height + 1)
+
+            if (m_width != width)
             {
-                return false;
+                if (!Attack(width, height))
+                {
+                    return false;
+                }
             }
-            
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Pawn is moved.");
 
             m_width = width;
             m_height = height;
 
-            Console.WriteLine($"{width}{height}, Pawn is moved");
-
             return true;
         }
 
-        public bool Attack(Piece target)
+        public bool Attack(eWidthAlphabet width, int height)
         {
+            if (width != m_width + 1 && width != m_width - 1)
+            {
+                return false;
+            }
+
             return true;
         }
 
         public override void Promotion()
         {
             base.Promotion();
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "P" : "b" + "P";
+        }
+    }
+
+    public class Knight : Piece
+    {
+        public Knight(eTeamColor color, eWidthAlphabet width, int height)
+            : base(color, width, height)
+        {
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "N" : "b" + "N";
+        }
+    }
+
+    public class Bishop : Piece
+    {
+        public Bishop(eTeamColor color, eWidthAlphabet width, int height)
+            : base(color, width, height)
+        {
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "B" : "b" + "B";
+        }
+    }
+
+    public class Rook : Piece
+    {
+        public Rook(eTeamColor color, eWidthAlphabet width, int height)
+            :base(color, width, height)
+        {
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "R" : "b" + "R";
+        }
+    }
+
+    public class Queen : Piece
+    {
+        public Queen(eTeamColor color, eWidthAlphabet width, int height)
+            : base(color, width, height)
+        {
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "Q" : "b" + "Q";
+        }
+    }
+
+    public class King : Piece
+    {
+        public King(eTeamColor color, eWidthAlphabet width, int height)
+            : base(color, width, height)
+        {
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + "K" : "b" + "K";
         }
     }
 }
