@@ -41,10 +41,20 @@ namespace ChessProject
         }
 
         public abstract bool Move(eWidthAlphabet width, int height);
+        public abstract bool Attack(eWidthAlphabet width, int height);
 
         public virtual void Promotion()
         {
             Console.Write("Promotion");
+        }
+
+        protected bool InvalidMove(eWidthAlphabet width, int height)
+        {
+            if (width < eWidthAlphabet.a || eWidthAlphabet.h < width) return true;
+            if (height < 1 || 8 < height) return true;
+            if (m_height == height && m_width == width) return false;
+
+            return false;
         }
     }
 
@@ -57,14 +67,32 @@ namespace ChessProject
 
         public override bool Move(eWidthAlphabet width, int height)
         {
-            if (height <= m_height) return false;
-            if (m_height + 2 < height) return false;
+            if (InvalidMove(width, height)) return false;
 
-            if (height == m_height + 2)
+            if (m_color == eTeamColor.White)
             {
-                if (m_height != Program.PAWN_START_HEIGHT)
+                if (height <= m_height) return false;
+                if (m_height + 2 < height) return false;
+
+                if (height == m_height + 2)
                 {
-                    return false;
+                    if (m_height != Board.PAWN_W_START_HEIGHT)
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (m_height <= height) return false;
+                if (height < m_height - 2) return false;
+
+                if (height == m_height - 2)
+                {
+                    if (m_height != Board.PAWN_B_START_HEIGHT)
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -84,7 +112,7 @@ namespace ChessProject
             return true;
         }
 
-        public bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eWidthAlphabet width, int height)
         {
             if (width != m_width + 1 && width != m_width - 1)
             {
@@ -112,9 +140,37 @@ namespace ChessProject
         {
         }
 
+        private bool DefaultCheck(eWidthAlphabet width, int height)
+        {
+            if (InvalidMove(width, height)) return false;
+            if (m_width == width) return false;
+            if (m_height == height) return false;
+            if (m_height + 1 == height && (m_width + 1 == width || m_width - 1 == width)) return false;
+            if (m_height + 2 == height && (m_width + 2 == width || m_width - 2 == width)) return false;
+            if (m_height + 2 < height || m_height - 2 > height) return false;
+            if (m_width + 2 < width || m_width - 2 > width) return false;
+
+            return true;
+        }
+
         public override bool Move(eWidthAlphabet width, int height)
         {
+            if (!DefaultCheck(width, height))
+            {
+                return false;
+            }
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Pawn is moved.");
+
+            m_width = width;
+            m_height = height;
+
             return true;
+        }
+
+        public override bool Attack(eWidthAlphabet width, int height)
+        {
+            return DefaultCheck(width, height);
         }
 
         public override string ToString()
@@ -131,6 +187,15 @@ namespace ChessProject
         }
 
         public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (InvalidMove(width, height)) return false;
+
+
+
+            return true;
+        }
+
+        public override bool Attack(eWidthAlphabet width, int height)
         {
             return true;
         }
@@ -150,6 +215,13 @@ namespace ChessProject
 
         public override bool Move(eWidthAlphabet width, int height)
         {
+            if (InvalidMove(width, height)) return false;
+
+            return true;
+        }
+
+        public override bool Attack(eWidthAlphabet width, int height)
+        {
             return true;
         }
 
@@ -168,6 +240,13 @@ namespace ChessProject
 
         public override bool Move(eWidthAlphabet width, int height)
         {
+            if (InvalidMove(width, height)) return false;
+
+            return true;
+        }
+
+        public override bool Attack(eWidthAlphabet width, int height)
+        {
             return true;
         }
 
@@ -185,6 +264,13 @@ namespace ChessProject
         }
 
         public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (InvalidMove(width, height)) return false;
+
+            return true;
+        }
+
+        public override bool Attack(eWidthAlphabet width, int height)
         {
             return true;
         }
