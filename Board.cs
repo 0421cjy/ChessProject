@@ -16,7 +16,9 @@ namespace ChessProject
         public Board()
         {
             //PlaceDefaultPosition();
-            AddPiece(new Knight(eTeamColor.White, eWidthAlphabet.d, 4));
+            AddPiece(new Rook(eTeamColor.White, eWidthAlphabet.d, 4));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.d, 6));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.e, 4));
         }
 
         private void PlaceDefaultPosition()
@@ -88,23 +90,9 @@ namespace ChessProject
             return true;
         }
 
-        public bool AttackPiece<T>(T piece, eWidthAlphabet newWidth, int newHeight) where T : Piece
+        public bool AttackPiece<T>(T piece, eWidthAlphabet targetWidth, int targetHeight) where T : Piece
         {
-            var target = m_pieces
-                .Where(p => p.Color == piece.Color)
-                .Where(p => p.Width == newWidth && p.Height == newHeight)
-                .SingleOrDefault();
-            if (target != null)
-            {
-                return false;
-            }
-
-            if (!piece.Attack(newWidth, newHeight))
-            {
-                return false;
-            }
-
-            return true;
+            return piece.Attack(targetWidth, targetHeight);
         }
 
         public void PrintAllBoard()
@@ -142,7 +130,39 @@ namespace ChessProject
             }
         }
 
-        public void PrintAttackArea(List<(eWidthAlphabet, int)> attackList)
+        private void SelectAttackArea(eWidthAlphabet width, int height)
+        {
+            var piece = GetPiece(width, height);
+            var areaList = new List<(eWidthAlphabet, int)>();
+
+            for (var i = eWidthAlphabet.a; i < eWidthAlphabet.Max; i++)
+            {
+                for (var j = 8; 0 < j; j--)
+                {
+                    if (AttackPiece(piece, i, j))
+                    {
+                        if (piece.Width == i && piece.Height == j) continue;
+
+                        areaList.Add((i, j));
+                    }
+                }
+            }
+
+            var copyArea = areaList.ToList();
+
+            foreach (var area in areaList)
+            {
+                var targetPiece = GetPiece(area.Item1, area.Item2);
+                if (targetPiece != null)
+                {
+                    piece.AttackAreaExcept(copyArea, targetPiece.Width, targetPiece.Height);
+                }
+            }
+
+            PrintAttackArea(copyArea);
+        }
+
+        private void PrintAttackArea(List<(eWidthAlphabet, int)> attackList)
         {
             for (eWidthAlphabet i = 0; i < eWidthAlphabet.Max; i++)
             {
@@ -174,25 +194,6 @@ namespace ChessProject
 
                 Console.WriteLine("+");
             }
-        }
-
-        public void SelectAttackArea(eWidthAlphabet width, int height)
-        {
-            var areaList = new List<(eWidthAlphabet, int)>();
-            var piece = GetPiece(width, height);
-
-            for (var i = eWidthAlphabet.a; i < eWidthAlphabet.Max; i++)
-            {
-                for (var j = 8; 0 < j; j--)
-                {
-                    if (AttackPiece(piece, i, j))
-                    {
-                        areaList.Add((i, j));
-                    }
-                }
-            }
-
-            PrintAttackArea(areaList);
         }
 
         public void Run()

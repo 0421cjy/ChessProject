@@ -43,6 +43,11 @@ namespace ChessProject
         public abstract bool Move(eWidthAlphabet width, int height);
         public abstract bool Attack(eWidthAlphabet width, int height);
 
+        public virtual void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        {
+            Console.Write("Attack except");
+        }
+
         public virtual void Promotion()
         {
             Console.Write("Promotion");
@@ -147,6 +152,8 @@ namespace ChessProject
             if (m_height == height) return false;
             if (m_height + 1 == height && (m_width + 1 == width || m_width - 1 == width)) return false;
             if (m_height + 2 == height && (m_width + 2 == width || m_width - 2 == width)) return false;
+            if (m_height - 1 == height && (m_width + 1 == width || m_width - 1 == width)) return false;
+            if (m_height - 2 == height && (m_width + 2 == width || m_width - 2 == width)) return false;
             if (m_height + 2 < height || m_height - 2 > height) return false;
             if (m_width + 2 < width || m_width - 2 > width) return false;
 
@@ -155,10 +162,7 @@ namespace ChessProject
 
         public override bool Move(eWidthAlphabet width, int height)
         {
-            if (!DefaultCheck(width, height))
-            {
-                return false;
-            }
+            if (!DefaultCheck(width, height)) return false;
 
             Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Pawn is moved.");
 
@@ -186,18 +190,41 @@ namespace ChessProject
         {
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
+            if (m_width == width) return false;
+            if (m_height == height) return false;
 
+            for(var i = eWidthAlphabet.h - width; i < (int)eWidthAlphabet.h; i++)
+            {
+                for (var j = 8 - m_height; 0 < i; i--)
+                {
+                    if (m_height == height + j)
+                    {
+                        return true;
+                    }
+                }
+            }
 
+            return true;
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (!DefaultCheck(width, height)) return false;
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Bishop is moved.");
+
+            m_width = width;
+            m_height = height;
 
             return true;
         }
 
         public override bool Attack(eWidthAlphabet width, int height)
         {
-            return true;
+            return DefaultCheck(width, height);
         }
 
         public override string ToString()
@@ -213,21 +240,63 @@ namespace ChessProject
         {
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
+            if (m_width != width && m_height != height) return false;
+
+            return true;
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (!DefaultCheck(width, height)) return false;
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Rook is moved.");
+
+            m_width = width;
+            m_height = height;
 
             return true;
         }
 
         public override bool Attack(eWidthAlphabet width, int height)
         {
-            return true;
+            return DefaultCheck(width, height);
         }
 
         public override string ToString()
         {
             return m_color == eTeamColor.White ? "w" + "R" : "b" + "R";
+        }
+
+        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        {
+            if (m_width == width && m_height == height) return;
+
+            if (m_width == width)
+            {
+                if (m_height < height)
+                {
+                    list.RemoveAll(l => l.Item1 == width && height <= l.Item2);
+                }
+                else
+                {
+                    list.RemoveAll(l => l.Item1 == width && l.Item2 <= height);
+                }
+            }
+
+            if (m_height == height)
+            {
+                if (m_width < width)
+                {
+                    list.RemoveAll(l => l.Item2 == height && width <= l.Item1);
+                }
+                else
+                {
+                    list.RemoveAll(l => l.Item2 == height && l.Item1 <= width);
+                }
+            }
         }
     }
 
@@ -238,9 +307,21 @@ namespace ChessProject
         {
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
+
+            return true;
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (!DefaultCheck(width, height)) return false;
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Queen is moved.");
+
+            m_width = width;
+            m_height = height;
 
             return true;
         }
@@ -263,9 +344,21 @@ namespace ChessProject
         {
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
+
+            return true;
+        }
+
+        public override bool Move(eWidthAlphabet width, int height)
+        {
+            if (!DefaultCheck(width, height)) return false;
+
+            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Queen is moved.");
+
+            m_width = width;
+            m_height = height;
 
             return true;
         }
