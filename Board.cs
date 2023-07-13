@@ -16,9 +16,9 @@ namespace ChessProject
         public Board()
         {
             //PlaceDefaultPosition();
-            AddPiece(new Rook(eTeamColor.White, eWidthAlphabet.d, 4));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.d, 6));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.e, 4));
+            AddPiece(new Pawn(eTeamColor.Black, eWidthAlphabet.d, 5));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.c, 4));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.g, 8));
         }
 
         private void PlaceDefaultPosition()
@@ -200,7 +200,7 @@ namespace ChessProject
         {
             Console.WriteLine("Hello Chess World!");
 
-            SelectAttackArea(eWidthAlphabet.d, 4);
+            SelectAttackArea(eWidthAlphabet.d, 5);
 
             while (true)
             {
