@@ -16,9 +16,10 @@ namespace ChessProject
         public Board()
         {
             //PlaceDefaultPosition();
-            AddPiece(new Pawn(eTeamColor.Black, eWidthAlphabet.d, 5));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.c, 4));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.g, 8));
+
+            AddPiece(new Queen(eTeamColor.Black, eWidthAlphabet.d, 5));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.b, 4));
+            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.e, 6));
         }
 
         private void PlaceDefaultPosition()
@@ -69,11 +70,11 @@ namespace ChessProject
 
         public bool MovePiece<T>(T piece, eWidthAlphabet newWidth, int newHeight) where T : Piece
         {
-            var target = m_pieces
+            var sameColorPiece = m_pieces
                 .Where(p => p.Color == piece.Color)
                 .Where(p => p.Width == newWidth && p.Height == newHeight)
                 .SingleOrDefault();
-            if (target != null)
+            if (sameColorPiece != null)
             {
                 return false;
             }
@@ -84,6 +85,15 @@ namespace ChessProject
             if (!piece.Move(newWidth, newHeight))
             {
                 return false;
+            }
+
+            var target = m_pieces
+                .Where(p => p.Color != piece.Color)
+                .Where(p => p.Width == newWidth && p.Height == newHeight)
+                .SingleOrDefault();
+            if (target != null)
+            {
+                m_pieces.Remove(target);
             }
 
             m_history.Push((prevWidth, prevHeight, piece));

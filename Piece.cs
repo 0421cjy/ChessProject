@@ -25,7 +25,8 @@ namespace ChessProject
 
     public abstract class Piece
     {
-        protected eTeamColor m_color;
+        private eTeamColor m_color;
+        private string m_keyword;
         protected eWidthAlphabet m_width;
         protected int m_height;
 
@@ -33,11 +34,12 @@ namespace ChessProject
         public eWidthAlphabet Width => m_width;
         public int Height => m_height;
 
-        public Piece(eTeamColor color, eWidthAlphabet width, int height)
+        public Piece(eTeamColor color, eWidthAlphabet width, int height, string keyword)
         {
             m_color = color;
             m_width = width;
             m_height = height;
+            m_keyword = keyword;
         }
 
         public abstract bool Move(eWidthAlphabet width, int height);
@@ -48,25 +50,25 @@ namespace ChessProject
             Console.Write("Attack except");
         }
 
-        public virtual void Promotion()
-        {
-            Console.Write("Promotion");
-        }
-
         protected bool InvalidMove(eWidthAlphabet width, int height)
         {
             if (width < eWidthAlphabet.a || eWidthAlphabet.h < width) return true;
             if (height < 1 || 8 < height) return true;
-            if (m_height == height && m_width == width) return false;
+            if (Width == width && Height == height) return false;
 
             return false;
+        }
+
+        public override string ToString()
+        {
+            return m_color == eTeamColor.White ? "w" + m_keyword : "b" + m_keyword;
         }
     }
 
     public class Pawn : Piece
     {
         public Pawn(eTeamColor color, eWidthAlphabet startWidth, int startHeight)
-            : base(color, startWidth, startHeight)
+            : base(color, startWidth, startHeight, "P")
         {
         }
 
@@ -74,14 +76,14 @@ namespace ChessProject
         {
             if (InvalidMove(width, height)) return false;
 
-            if (m_color == eTeamColor.White)
+            if (Color == eTeamColor.White)
             {
-                if (height <= m_height) return false;
-                if (m_height + 2 < height) return false;
+                if (height <= Height) return false;
+                if (Height + 2 < height) return false;
 
-                if (height == m_height + 2)
+                if (height == Height + 2)
                 {
-                    if (m_height != Board.PAWN_W_START_HEIGHT)
+                    if (Height != Board.PAWN_W_START_HEIGHT)
                     {
                         return false;
                     }
@@ -89,19 +91,19 @@ namespace ChessProject
             }
             else
             {
-                if (m_height <= height) return false;
-                if (height < m_height - 2) return false;
+                if (Height <= height) return false;
+                if (height < Height - 2) return false;
 
-                if (height == m_height - 2)
+                if (height == Height - 2)
                 {
-                    if (m_height != Board.PAWN_B_START_HEIGHT)
+                    if (Height != Board.PAWN_B_START_HEIGHT)
                     {
                         return false;
                     }
                 }
             }
 
-            if (m_width != width)
+            if (Width != width)
             {
                 if (!Attack(width, height))
                 {
@@ -109,7 +111,7 @@ namespace ChessProject
                 }
             }
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Pawn is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Pawn is moved.");
 
             m_width = width;
             m_height = height;
@@ -119,16 +121,16 @@ namespace ChessProject
 
         public override bool Attack(eWidthAlphabet width, int height)
         {
-            if (m_color == eTeamColor.White)
+            if (Color == eTeamColor.White)
             {
-                if (height == m_height + 1 && (width == m_width - 1 || width == m_width + 1))
+                if (height == Height + 1 && (width == Width - 1 || width == Width + 1))
                 {
                     return true;
                 }
             }
             else
             {
-                if (height == m_height - 1 && (width == m_width - 1 || width == m_width + 1))
+                if (height == Height - 1 && (width == Width - 1 || width == Width + 1))
                 {
                     return true;
                 }
@@ -137,35 +139,29 @@ namespace ChessProject
             return false;
         }
 
-        public override void Promotion()
+        public void Promotion()
         {
-            base.Promotion();
-        }
-
-        public override string ToString()
-        {
-            return m_color == eTeamColor.White ? "w" + "P" : "b" + "P";
         }
     }
 
     public class Knight : Piece
     {
         public Knight(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height)
+            : base(color, width, height, "N")
         {
         }
 
         private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
-            if (m_width == width) return false;
-            if (m_height == height) return false;
-            if (m_height + 1 == height && (m_width + 1 == width || m_width - 1 == width)) return false;
-            if (m_height + 2 == height && (m_width + 2 == width || m_width - 2 == width)) return false;
-            if (m_height - 1 == height && (m_width + 1 == width || m_width - 1 == width)) return false;
-            if (m_height - 2 == height && (m_width + 2 == width || m_width - 2 == width)) return false;
-            if (m_height + 2 < height || m_height - 2 > height) return false;
-            if (m_width + 2 < width || m_width - 2 > width) return false;
+            if (Width == width) return false;
+            if (Height == height) return false;
+            if (Height + 1 == height && (Width + 1 == width || Width - 1 == width)) return false;
+            if (Height + 2 == height && (Width + 2 == width || Width - 2 == width)) return false;
+            if (Height - 1 == height && (Width + 1 == width || Width - 1 == width)) return false;
+            if (Height - 2 == height && (Width + 2 == width || Width - 2 == width)) return false;
+            if (Height + 2 < height || Height - 2 > height) return false;
+            if (Width + 2 < width || Width - 2 > width) return false;
 
             return true;
         }
@@ -174,7 +170,7 @@ namespace ChessProject
         {
             if (!DefaultCheck(width, height)) return false;
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Pawn is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Pawn is moved.");
 
             m_width = width;
             m_height = height;
@@ -187,16 +183,16 @@ namespace ChessProject
             return DefaultCheck(width, height);
         }
 
-        public override string ToString()
+        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
         {
-            return m_color == eTeamColor.White ? "w" + "N" : "b" + "N";
+            list.RemoveAll(l => l.Item1 == width && l.Item2 == height);
         }
     }
 
     public class Bishop : Piece
     {
         public Bishop(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height)
+            : base(color, width, height, "B")
         {
         }
 
@@ -204,17 +200,17 @@ namespace ChessProject
         {
             if (InvalidMove(width, height)) return false;
 
-            for (var i = 1; i < 9 - m_height; i++)
+            for (var i = 1; i < 9 - Height; i++)
             {
-                if (m_height + i == height && (m_width + i == width || m_width - i == width))
+                if (Height + i == height && (Width + i == width || Width - i == width))
                 {
                     return true;
                 }
             }
 
-            for (var i = 1; i < m_height; i++)
+            for (var i = 1; i < Height; i++)
             {
-                if (m_height - i == height && (m_width + i == width || m_width - i == width))
+                if (Height - i == height && (Width + i == width || Width - i == width))
                 {
                     return true;
                 }
@@ -227,7 +223,7 @@ namespace ChessProject
         {
             if (!DefaultCheck(width, height)) return false;
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Bishop is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Bishop is moved.");
 
             m_width = width;
             m_height = height;
@@ -240,16 +236,11 @@ namespace ChessProject
             return DefaultCheck(width, height);
         }
 
-        public override string ToString()
-        {
-            return m_color == eTeamColor.White ? "w" + "B" : "b" + "B";
-        }
-
         public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
         {
-            if (m_width > width)
+            if (Width > width)
             {
-                if (m_height < height)
+                if (Height < height)
                 {
                     list.RemoveAll(l => l.Item1 <= width && height <= l.Item2);
                 }
@@ -260,7 +251,7 @@ namespace ChessProject
             }
             else
             {
-                if (m_height < height)
+                if (Height < height)
                 {
                     list.RemoveAll(l => l.Item1 >= width && height <= l.Item2);
                 }
@@ -275,14 +266,14 @@ namespace ChessProject
     public class Rook : Piece
     {
         public Rook(eTeamColor color, eWidthAlphabet width, int height)
-            :base(color, width, height)
+            :base(color, width, height, "R")
         {
         }
 
         private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
-            if (m_width == width || m_height == height) return true;
+            if (Width == width || Height == height) return true;
 
             return false;
         }
@@ -291,7 +282,7 @@ namespace ChessProject
         {
             if (!DefaultCheck(width, height)) return false;
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Rook is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Rook is moved.");
 
             m_width = width;
             m_height = height;
@@ -304,18 +295,13 @@ namespace ChessProject
             return DefaultCheck(width, height);
         }
 
-        public override string ToString()
-        {
-            return m_color == eTeamColor.White ? "w" + "R" : "b" + "R";
-        }
-
         public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
         {
-            if (m_width == width && m_height == height) return;
+            if (Width == width && Height == height) return;
 
-            if (m_width == width)
+            if (Width == width)
             {
-                if (m_height < height)
+                if (Height < height)
                 {
                     list.RemoveAll(l => l.Item1 == width && height <= l.Item2);
                 }
@@ -325,9 +311,9 @@ namespace ChessProject
                 }
             }
 
-            if (m_height == height)
+            if (Height == height)
             {
-                if (m_width < width)
+                if (Width < width)
                 {
                     list.RemoveAll(l => l.Item2 == height && width <= l.Item1);
                 }
@@ -342,26 +328,26 @@ namespace ChessProject
     public class Queen : Piece
     {
         public Queen(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height)
+            : base(color, width, height, "Q")
         {
         }
 
         private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
-            if (m_width == width || m_height == height) return true;
+            if (Width == width || Height == height) return true;
 
-            for (var i = 1; i < 9 - m_height; i++)
+            for (var i = 1; i < 9 - Height; i++)
             {
-                if (m_height + i == height && (m_width + i == width || m_width - i == width))
+                if (Height + i == height && (Width + i == width || Width - i == width))
                 {
                     return true;
                 }
             }
 
-            for (var i = 1; i < m_height; i++)
+            for (var i = 1; i < Height; i++)
             {
-                if (m_height - i == height && (m_width + i == width || m_width - i == width))
+                if (Height - i == height && (Width + i == width || Width - i == width))
                 {
                     return true;
                 }
@@ -374,7 +360,7 @@ namespace ChessProject
         {
             if (!DefaultCheck(width, height)) return false;
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Queen is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Queen is moved.");
 
             m_width = width;
             m_height = height;
@@ -387,41 +373,36 @@ namespace ChessProject
             return DefaultCheck(width, height);
         }
 
-        public override string ToString()
-        {
-            return m_color == eTeamColor.White ? "w" + "Q" : "b" + "Q";
-        }
-
         public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
         {
-            if (m_width == width && m_height == height) return;
+            if (Width == width && Height == height) return;
 
-            if (m_width > width)
+            if (Width > width)
             {
-                if (m_height < height)
+                if (Height < height)
                 {
-                    list.RemoveAll(l => l.Item1 <= width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 < width && height < l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 <= width && height >= l.Item2);
+                    list.RemoveAll(l => l.Item1 < width && height > l.Item2);
                 }
             }
             else
             {
-                if (m_height < height)
+                if (Height < height)
                 {
-                    list.RemoveAll(l => l.Item1 >= width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 > width && height < l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 >= width && height >= l.Item2);
+                    list.RemoveAll(l => l.Item1 > width && height > l.Item2);
                 }
             }
 
-            if (m_width == width)
+            if (Width == width)
             {
-                if (m_height < height)
+                if (Height < height)
                 {
                     list.RemoveAll(l => l.Item1 == width && height <= l.Item2);
                 }
@@ -431,9 +412,9 @@ namespace ChessProject
                 }
             }
 
-            if (m_height == height)
+            if (Height == height)
             {
-                if (m_width < width)
+                if (Width < width)
                 {
                     list.RemoveAll(l => l.Item2 == height && width <= l.Item1);
                 }
@@ -448,15 +429,15 @@ namespace ChessProject
     public class King : Piece
     {
         public King(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height)
+            : base(color, width, height, "K")
         {
         }
 
         private bool DefaultCheck(eWidthAlphabet width, int height)
         {
             if (InvalidMove(width, height)) return false;
-            if (m_width + 1 < width || m_height + 1 < height) return false;
-            if (m_width - 1 > width || m_height - 1 > height) return false;
+            if (Width + 1 < width || Height + 1 < height) return false;
+            if (Width - 1 > width || Height - 1 > height) return false;
 
             return true;
         }
@@ -465,7 +446,7 @@ namespace ChessProject
         {
             if (!DefaultCheck(width, height)) return false;
 
-            Console.WriteLine($"{m_width}{m_height} -> {width}{height}. Queen is moved.");
+            Console.WriteLine($"{Width}{Height} -> {width}{height}. Queen is moved.");
 
             m_width = width;
             m_height = height;
@@ -476,11 +457,6 @@ namespace ChessProject
         public override bool Attack(eWidthAlphabet width, int height)
         {
             return DefaultCheck(width, height);
-        }
-
-        public override string ToString()
-        {
-            return m_color == eTeamColor.White ? "w" + "K" : "b" + "K";
         }
     }
 }
