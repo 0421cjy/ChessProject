@@ -11,43 +11,43 @@ namespace ChessProject
         private const int MAX_BOARD_WIDTH = 8;
 
         private List<Piece> m_pieces = new ();
-        protected Stack<(eWidthAlphabet, int, Piece)> m_history = new ();
+        protected Stack<(eFile, int, Piece)> m_history = new ();
 
         public Board()
         {
             //PlaceDefaultPosition();
 
-            AddPiece(new Queen(eTeamColor.Black, eWidthAlphabet.d, 5));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.b, 4));
-            AddPiece(new Pawn(eTeamColor.White, eWidthAlphabet.e, 6));
+            AddPiece(new Queen(eColor.Black, eFile.d, 5));
+            AddPiece(new Pawn(eColor.White, eFile.b, 4));
+            AddPiece(new Pawn(eColor.White, eFile.e, 6));
         }
 
         private void PlaceDefaultPosition()
         {
-            for (var color = eTeamColor.White; color < eTeamColor.Max; color++)
+            for (var color = eColor.White; color < eColor.Max; color++)
             {
                 for (int width = 0; width < MAX_BOARD_WIDTH; width++)
                 {
-                    AddPiece(new Pawn(color, (eWidthAlphabet)width, PAWN_W_START_HEIGHT + (5 * (int)color)));
+                    AddPiece(new Pawn(color, (eFile)width, PAWN_W_START_HEIGHT + (5 * (int)color)));
                 }
 
-                AddPiece(new Rook(color, eWidthAlphabet.a, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Rook(color, eWidthAlphabet.h, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Rook(color, eFile.a, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Rook(color, eFile.h, 1 + (PAWN_B_START_HEIGHT * (int)color)));
 
-                AddPiece(new Knight(color, eWidthAlphabet.b, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Knight(color, eWidthAlphabet.g, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Knight(color, eFile.b, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Knight(color, eFile.g, 1 + (PAWN_B_START_HEIGHT * (int)color)));
 
-                AddPiece(new Bishop(color, eWidthAlphabet.c, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Bishop(color, eWidthAlphabet.f, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Bishop(color, eFile.c, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Bishop(color, eFile.f, 1 + (PAWN_B_START_HEIGHT * (int)color)));
 
-                AddPiece(new Queen(color, eWidthAlphabet.d, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new King(color, eWidthAlphabet.e, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new Queen(color, eFile.d, 1 + (PAWN_B_START_HEIGHT * (int)color)));
+                AddPiece(new King(color, eFile.e, 1 + (PAWN_B_START_HEIGHT * (int)color)));
             }
         }
 
         private bool AddPiece<T>(T piece) where T : Piece
         {
-            if (m_pieces.Any(p => p.Width == piece.Width && p.Height == piece.Height))
+            if (m_pieces.Any(p => p.File == piece.File && p.Rank == piece.Rank))
             {
                 Console.WriteLine("Add failed. duplicated position.");
                 return false;
@@ -57,9 +57,9 @@ namespace ChessProject
             return true;
         }
 
-        public Piece GetPiece(eWidthAlphabet width, int height)
+        public Piece GetPiece(eFile width, int height)
         {
-            var selectPiece = m_pieces.Where(p => p.Width == width && p.Height == height).SingleOrDefault();
+            var selectPiece = m_pieces.Where(p => p.File == width && p.Rank == height).SingleOrDefault();
             if (selectPiece == null)
             {
                 return null;
@@ -68,19 +68,19 @@ namespace ChessProject
             return selectPiece;
         }
 
-        public bool MovePiece<T>(T piece, eWidthAlphabet newWidth, int newHeight) where T : Piece
+        public bool MovePiece<T>(T piece, eFile newWidth, int newHeight) where T : Piece
         {
             var sameColorPiece = m_pieces
                 .Where(p => p.Color == piece.Color)
-                .Where(p => p.Width == newWidth && p.Height == newHeight)
+                .Where(p => p.File == newWidth && p.Rank == newHeight)
                 .SingleOrDefault();
             if (sameColorPiece != null)
             {
                 return false;
             }
 
-            var prevWidth = piece.Width;
-            var prevHeight = piece.Height;
+            var prevWidth = piece.File;
+            var prevHeight = piece.Rank;
 
             if (!piece.Move(newWidth, newHeight))
             {
@@ -89,7 +89,7 @@ namespace ChessProject
 
             var target = m_pieces
                 .Where(p => p.Color != piece.Color)
-                .Where(p => p.Width == newWidth && p.Height == newHeight)
+                .Where(p => p.File == newWidth && p.Rank == newHeight)
                 .SingleOrDefault();
             if (target != null)
             {
@@ -100,14 +100,14 @@ namespace ChessProject
             return true;
         }
 
-        public bool AttackPiece<T>(T piece, eWidthAlphabet targetWidth, int targetHeight) where T : Piece
+        public bool AttackPiece<T>(T piece, eFile targetWidth, int targetHeight) where T : Piece
         {
             return piece.Attack(targetWidth, targetHeight);
         }
 
         public void PrintAllBoard()
         {
-            for (eWidthAlphabet i = 0; i < eWidthAlphabet.Max; i++)
+            for (eFile i = 0; i < eFile.Max; i++)
             {
                 Console.Write("+---");
             }
@@ -116,9 +116,9 @@ namespace ChessProject
 
             for (var i = 8; 0 < i; i--)
             {
-                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                for (var j = eFile.a; j < eFile.Max; j++)
                 {
-                    var piece = m_pieces.Where(p => p.Width == j && p.Height == i).SingleOrDefault();
+                    var piece = m_pieces.Where(p => p.File == j && p.Rank == i).SingleOrDefault();
                     if (piece != null)
                     {
                         Console.Write($"| {piece}");
@@ -131,7 +131,7 @@ namespace ChessProject
 
                 Console.WriteLine("|");
 
-                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                for (var j = eFile.a; j < eFile.Max; j++)
                 {
                     Console.Write("+---");
                 }
@@ -140,18 +140,18 @@ namespace ChessProject
             }
         }
 
-        private void SelectAttackArea(eWidthAlphabet width, int height)
+        private void SelectAttackArea(eFile width, int height)
         {
             var piece = GetPiece(width, height);
-            var areaList = new List<(eWidthAlphabet, int)>();
+            var areaList = new List<(eFile, int)>();
 
-            for (var i = eWidthAlphabet.a; i < eWidthAlphabet.Max; i++)
+            for (var i = eFile.a; i < eFile.Max; i++)
             {
                 for (var j = 8; 0 < j; j--)
                 {
                     if (AttackPiece(piece, i, j))
                     {
-                        if (piece.Width == i && piece.Height == j) continue;
+                        if (piece.File == i && piece.Rank == j) continue;
 
                         areaList.Add((i, j));
                     }
@@ -165,16 +165,16 @@ namespace ChessProject
                 var targetPiece = GetPiece(area.Item1, area.Item2);
                 if (targetPiece != null)
                 {
-                    piece.AttackAreaExcept(copyArea, targetPiece.Width, targetPiece.Height);
+                    piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
                 }
             }
 
             PrintAttackArea(copyArea);
         }
 
-        private void PrintAttackArea(List<(eWidthAlphabet, int)> attackList)
+        private void PrintAttackArea(List<(eFile, int)> attackList)
         {
-            for (eWidthAlphabet i = 0; i < eWidthAlphabet.Max; i++)
+            for (eFile i = 0; i < eFile.Max; i++)
             {
                 Console.Write("+---");
             }
@@ -183,7 +183,7 @@ namespace ChessProject
 
             for (var i = 8; 0 < i; i--)
             {
-                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                for (var j = eFile.a; j < eFile.Max; j++)
                 {
                     if (attackList.Any(p => p.Item1 == j && p.Item2 == i))
                     {
@@ -197,7 +197,7 @@ namespace ChessProject
 
                 Console.WriteLine("|");
 
-                for (var j = eWidthAlphabet.a; j < eWidthAlphabet.Max; j++)
+                for (var j = eFile.a; j < eFile.Max; j++)
                 {
                     Console.Write("+---");
                 }
@@ -210,7 +210,7 @@ namespace ChessProject
         {
             Console.WriteLine("Hello Chess World!");
 
-            SelectAttackArea(eWidthAlphabet.d, 5);
+            SelectAttackArea(eFile.d, 5);
 
             while (true)
             {
@@ -259,10 +259,10 @@ namespace ChessProject
                     _ => -1,
                 };
 
-                var targetPiece = GetPiece((eWidthAlphabet)width, height);
-                if (!MovePiece(targetPiece, (eWidthAlphabet)newWidth, newHeight))
+                var targetPiece = GetPiece((eFile)width, height);
+                if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
                 {
-                    Console.WriteLine($"moved failed {targetPiece.Width}{targetPiece.Height} -> {(eWidthAlphabet)newWidth}{newHeight}");
+                    Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
                 }
             }
         }

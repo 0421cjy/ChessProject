@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace ChessProject
 {
-    public enum eTeamColor
+    public enum eColor
     {
         White,
         Black,
         Max,
     }
 
-    public enum eWidthAlphabet
+    public enum eFile
     {
         a,
         b,
@@ -25,65 +25,65 @@ namespace ChessProject
 
     public abstract class Piece
     {
-        private eTeamColor m_color;
-        private string m_keyword;
-        protected eWidthAlphabet m_width;
-        protected int m_height;
+        private readonly eColor m_color;
+        private string m_symbol;
+        protected eFile m_file;
+        protected int m_rank;
 
-        public eTeamColor Color => m_color;
-        public eWidthAlphabet Width => m_width;
-        public int Height => m_height;
+        public eColor Color => m_color;
+        public eFile File => m_file;
+        public int Rank => m_rank;
 
-        public Piece(eTeamColor color, eWidthAlphabet width, int height, string keyword)
+        public Piece(eColor color, eFile file, int rank, string symbol)
         {
             m_color = color;
-            m_width = width;
-            m_height = height;
-            m_keyword = keyword;
+            m_file = file;
+            m_rank = rank;
+            m_symbol = symbol;
         }
 
-        public abstract bool Move(eWidthAlphabet width, int height);
-        public abstract bool Attack(eWidthAlphabet width, int height);
+        public abstract bool Move(eFile file, int rank);
+        public abstract bool Attack(eFile file, int rank);
 
-        public virtual void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        public virtual void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
             Console.Write("Attack except");
         }
 
-        protected bool InvalidMove(eWidthAlphabet width, int height)
+        protected bool InvalidMove(eFile file, int rank)
         {
-            if (width < eWidthAlphabet.a || eWidthAlphabet.h < width) return true;
-            if (height < 1 || 8 < height) return true;
-            if (Width == width && Height == height) return false;
+            if (file < eFile.a || eFile.h < file) return true;
+            if (rank < 1 || 8 < rank) return true;
+            if (File == file && Rank == rank) return false;
 
             return false;
         }
 
         public override string ToString()
         {
-            return m_color == eTeamColor.White ? "w" + m_keyword : "b" + m_keyword;
+            return (m_color == eColor.White ? "w" : "b") + m_symbol;
         }
     }
 
     public class Pawn : Piece
     {
-        public Pawn(eTeamColor color, eWidthAlphabet startWidth, int startHeight)
-            : base(color, startWidth, startHeight, "P")
+        public Pawn(eColor color, eFile file, int rank)
+            : base(color, file, rank, "P")
         {
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
+            if (InvalidMove(file, rank)) return false;
 
-            if (Color == eTeamColor.White)
+            if (Color == eColor.White)
             {
-                if (height <= Height) return false;
-                if (Height + 2 < height) return false;
+                if (rank <= Rank) return false;
+                if (Rank + 2 < rank) return false;
 
-                if (height == Height + 2)
+                if (rank == Rank + 2)
                 {
-                    if (Height != Board.PAWN_W_START_HEIGHT)
+                    if (Rank != Board.PAWN_W_START_HEIGHT)
                     {
                         return false;
                     }
@@ -91,46 +91,46 @@ namespace ChessProject
             }
             else
             {
-                if (Height <= height) return false;
-                if (height < Height - 2) return false;
+                if (Rank <= rank) return false;
+                if (rank < Rank - 2) return false;
 
-                if (height == Height - 2)
+                if (rank == Rank - 2)
                 {
-                    if (Height != Board.PAWN_B_START_HEIGHT)
+                    if (Rank != Board.PAWN_B_START_HEIGHT)
                     {
                         return false;
                     }
                 }
             }
 
-            if (Width != width)
+            if (File != file)
             {
-                if (!Attack(width, height))
+                if (!Attack(file, rank))
                 {
                     return false;
                 }
             }
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Pawn is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Pawn is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            if (Color == eTeamColor.White)
+            if (Color == eColor.White)
             {
-                if (height == Height + 1 && (width == Width - 1 || width == Width + 1))
+                if (rank == Rank + 1 && (file == File - 1 || file == File + 1))
                 {
                     return true;
                 }
             }
             else
             {
-                if (height == Height - 1 && (width == Width - 1 || width == Width + 1))
+                if (rank == Rank - 1 && (file == File - 1 || file == File + 1))
                 {
                     return true;
                 }
@@ -146,71 +146,71 @@ namespace ChessProject
 
     public class Knight : Piece
     {
-        public Knight(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height, "N")
+        public Knight(eColor color, eFile file, int rank)
+            : base(color, file, rank, "N")
         {
         }
 
-        private bool DefaultCheck(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
-            if (Width == width) return false;
-            if (Height == height) return false;
-            if (Height + 1 == height && (Width + 1 == width || Width - 1 == width)) return false;
-            if (Height + 2 == height && (Width + 2 == width || Width - 2 == width)) return false;
-            if (Height - 1 == height && (Width + 1 == width || Width - 1 == width)) return false;
-            if (Height - 2 == height && (Width + 2 == width || Width - 2 == width)) return false;
-            if (Height + 2 < height || Height - 2 > height) return false;
-            if (Width + 2 < width || Width - 2 > width) return false;
+            if (InvalidMove(file, rank)) return false;
+            if (File == file) return false;
+            if (Rank == rank) return false;
+            if (Rank + 1 == rank && (File + 1 == file || File - 1 == file)) return false;
+            if (Rank + 2 == rank && (File + 2 == file || File - 2 == file)) return false;
+            if (Rank - 1 == rank && (File + 1 == file || File - 1 == file)) return false;
+            if (Rank - 2 == rank && (File + 2 == file || File - 2 == file)) return false;
+            if (Rank + 2 < rank || Rank - 2 > rank) return false;
+            if (File + 2 < file || File - 2 > file) return false;
 
             return true;
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (!DefaultCheck(width, height)) return false;
+            if (!DefaultCheck(file, rank)) return false;
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Pawn is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Pawn is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            return DefaultCheck(width, height);
+            return DefaultCheck(file, rank);
         }
 
-        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
-            list.RemoveAll(l => l.Item1 == width && l.Item2 == height);
+            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
         }
     }
 
     public class Bishop : Piece
     {
-        public Bishop(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height, "B")
+        public Bishop(eColor color, eFile file, int rank)
+            : base(color, file, rank, "B")
         {
         }
 
-        private bool DefaultCheck(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
+            if (InvalidMove(file, rank)) return false;
 
-            for (var i = 1; i < 9 - Height; i++)
+            for (var i = 1; i < 9 - Rank; i++)
             {
-                if (Height + i == height && (Width + i == width || Width - i == width))
+                if (Rank + i == rank && (File + i == file || File - i == file))
                 {
                     return true;
                 }
             }
 
-            for (var i = 1; i < Height; i++)
+            for (var i = 1; i < Rank; i++)
             {
-                if (Height - i == height && (Width + i == width || Width - i == width))
+                if (Rank - i == rank && (File + i == file || File - i == file))
                 {
                     return true;
                 }
@@ -219,45 +219,45 @@ namespace ChessProject
             return false;
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (!DefaultCheck(width, height)) return false;
+            if (!DefaultCheck(file, rank)) return false;
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Bishop is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Bishop is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            return DefaultCheck(width, height);
+            return DefaultCheck(file, rank);
         }
 
-        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
-            if (Width > width)
+            if (File > file)
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 <= width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 <= file && rank <= l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 <= width && height >= l.Item2);
+                    list.RemoveAll(l => l.Item1 <= file && rank >= l.Item2);
                 }
             }
             else
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 >= width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 >= file && rank <= l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 >= width && height >= l.Item2);
+                    list.RemoveAll(l => l.Item1 >= file && rank >= l.Item2);
                 }
             }
         }
@@ -265,61 +265,61 @@ namespace ChessProject
 
     public class Rook : Piece
     {
-        public Rook(eTeamColor color, eWidthAlphabet width, int height)
-            :base(color, width, height, "R")
+        public Rook(eColor color, eFile file, int rank)
+            :base(color, file, rank, "R")
         {
         }
 
-        private bool DefaultCheck(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
-            if (Width == width || Height == height) return true;
+            if (InvalidMove(file, rank)) return false;
+            if (File == file || Rank == rank) return true;
 
             return false;
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (!DefaultCheck(width, height)) return false;
+            if (!DefaultCheck(file, rank)) return false;
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Rook is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Rook is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            return DefaultCheck(width, height);
+            return DefaultCheck(file, rank);
         }
 
-        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
-            if (Width == width && Height == height) return;
+            if (File == file && Rank == rank) return;
 
-            if (Width == width)
+            if (File == file)
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 == width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 == file && rank <= l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 == width && l.Item2 <= height);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 <= rank);
                 }
             }
 
-            if (Height == height)
+            if (Rank == rank)
             {
-                if (Width < width)
+                if (File < file)
                 {
-                    list.RemoveAll(l => l.Item2 == height && width <= l.Item1);
+                    list.RemoveAll(l => l.Item2 == rank && file <= l.Item1);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item2 == height && l.Item1 <= width);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 <= file);
                 }
             }
         }
@@ -327,27 +327,27 @@ namespace ChessProject
 
     public class Queen : Piece
     {
-        public Queen(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height, "Q")
+        public Queen(eColor color, eFile file, int rank)
+            : base(color, file, rank, "Q")
         {
         }
 
-        private bool DefaultCheck(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
-            if (Width == width || Height == height) return true;
+            if (InvalidMove(file, rank)) return false;
+            if (File == file || Rank == rank) return true;
 
-            for (var i = 1; i < 9 - Height; i++)
+            for (var i = 1; i < 9 - Rank; i++)
             {
-                if (Height + i == height && (Width + i == width || Width - i == width))
+                if (Rank + i == rank && (File + i == file || File - i == file))
                 {
                     return true;
                 }
             }
 
-            for (var i = 1; i < Height; i++)
+            for (var i = 1; i < Rank; i++)
             {
-                if (Height - i == height && (Width + i == width || Width - i == width))
+                if (Rank - i == rank && (File + i == file || File - i == file))
                 {
                     return true;
                 }
@@ -356,71 +356,71 @@ namespace ChessProject
             return false;
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (!DefaultCheck(width, height)) return false;
+            if (!DefaultCheck(file, rank)) return false;
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Queen is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Queen is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            return DefaultCheck(width, height);
+            return DefaultCheck(file, rank);
         }
 
-        public override void AttackAreaExcept(List<(eWidthAlphabet, int)> list, eWidthAlphabet width, int height)
+        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
-            if (Width == width && Height == height) return;
+            if (File == file && Rank == rank) return;
 
-            if (Width > width)
+            if (File > file)
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 < width && height < l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && rank < l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 < width && height > l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && rank > l.Item2);
                 }
             }
             else
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 > width && height < l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && rank < l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 > width && height > l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && rank > l.Item2);
                 }
             }
 
-            if (Width == width)
+            if (File == file)
             {
-                if (Height < height)
+                if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 == width && height <= l.Item2);
+                    list.RemoveAll(l => l.Item1 == file && rank <= l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 == width && l.Item2 <= height);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 <= rank);
                 }
             }
 
-            if (Height == height)
+            if (Rank == rank)
             {
-                if (Width < width)
+                if (File < file)
                 {
-                    list.RemoveAll(l => l.Item2 == height && width <= l.Item1);
+                    list.RemoveAll(l => l.Item2 == rank && file <= l.Item1);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item2 == height && l.Item1 <= width);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 <= file);
                 }
             }
         }
@@ -428,35 +428,35 @@ namespace ChessProject
 
     public class King : Piece
     {
-        public King(eTeamColor color, eWidthAlphabet width, int height)
-            : base(color, width, height, "K")
+        public King(eColor color, eFile file, int rank)
+            : base(color, file, rank, "K")
         {
         }
 
-        private bool DefaultCheck(eWidthAlphabet width, int height)
+        private bool DefaultCheck(eFile file, int rank)
         {
-            if (InvalidMove(width, height)) return false;
-            if (Width + 1 < width || Height + 1 < height) return false;
-            if (Width - 1 > width || Height - 1 > height) return false;
+            if (InvalidMove(file, rank)) return false;
+            if (File + 1 < file || Rank + 1 < rank) return false;
+            if (File - 1 > file || Rank - 1 > rank) return false;
 
             return true;
         }
 
-        public override bool Move(eWidthAlphabet width, int height)
+        public override bool Move(eFile file, int rank)
         {
-            if (!DefaultCheck(width, height)) return false;
+            if (!DefaultCheck(file, rank)) return false;
 
-            Console.WriteLine($"{Width}{Height} -> {width}{height}. Queen is moved.");
+            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Queen is moved.");
 
-            m_width = width;
-            m_height = height;
+            m_file = file;
+            m_rank = rank;
 
             return true;
         }
 
-        public override bool Attack(eWidthAlphabet width, int height)
+        public override bool Attack(eFile file, int rank)
         {
-            return DefaultCheck(width, height);
+            return DefaultCheck(file, rank);
         }
     }
 }
