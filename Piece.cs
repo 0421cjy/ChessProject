@@ -33,6 +33,17 @@ namespace ChessProject
         public eColor Color => m_color;
         public eFile File => m_file;
         public int Rank => m_rank;
+        public String Symbol => m_symbol;
+
+        public eFile SetFile 
+        { 
+            set { m_file = value; } 
+        }
+
+        public int SetRank
+        {
+            set { m_rank = value; }
+        }
 
         public Piece(eColor color, eFile file, int rank, string symbol)
         {
@@ -43,20 +54,16 @@ namespace ChessProject
         }
 
         public abstract bool Move(eFile file, int rank);
-        public abstract bool Attack(eFile file, int rank);
 
-        public virtual void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
-        {
-            Console.Write("Attack except");
-        }
+        public virtual void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank) { }
 
-        protected bool InvalidMove(eFile file, int rank)
+        protected bool CheckMovePostion(eFile file, int rank)
         {
-            if (file < eFile.a || eFile.h < file) return true;
-            if (rank < 1 || 8 < rank) return true;
+            if (file < eFile.a || eFile.h < file) return false;
+            if (rank < 1 || 8 < rank) return false;
             if (File == file && Rank == rank) return false;
 
-            return false;
+            return true;
         }
 
         public override string ToString()
@@ -74,7 +81,7 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
 
             if (Color == eColor.White)
             {
@@ -111,15 +118,10 @@ namespace ChessProject
                 }
             }
 
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Pawn is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
             return true;
         }
 
-        public override bool Attack(eFile file, int rank)
+        public bool Attack(eFile file, int rank)
         {
             if (Color == eColor.White)
             {
@@ -139,6 +141,11 @@ namespace ChessProject
             return false;
         }
 
+        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
+        {
+            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
+        }
+
         public void Promotion()
         {
         }
@@ -151,9 +158,9 @@ namespace ChessProject
         {
         }
 
-        private bool DefaultCheck(eFile file, int rank)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
             if (File == file) return false;
             if (Rank == rank) return false;
             if (Rank + 1 == rank && (File + 1 == file || File - 1 == file)) return false;
@@ -164,23 +171,6 @@ namespace ChessProject
             if (File + 2 < file || File - 2 > file) return false;
 
             return true;
-        }
-
-        public override bool Move(eFile file, int rank)
-        {
-            if (!DefaultCheck(file, rank)) return false;
-
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Pawn is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
-            return true;
-        }
-
-        public override bool Attack(eFile file, int rank)
-        {
-            return DefaultCheck(file, rank);
         }
 
         public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
@@ -196,9 +186,9 @@ namespace ChessProject
         {
         }
 
-        private bool DefaultCheck(eFile file, int rank)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
 
             for (var i = 1; i < 9 - Rank; i++)
             {
@@ -217,23 +207,6 @@ namespace ChessProject
             }
 
             return false;
-        }
-
-        public override bool Move(eFile file, int rank)
-        {
-            if (!DefaultCheck(file, rank)) return false;
-
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Bishop is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
-            return true;
-        }
-
-        public override bool Attack(eFile file, int rank)
-        {
-            return DefaultCheck(file, rank);
         }
 
         public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
@@ -270,29 +243,12 @@ namespace ChessProject
         {
         }
 
-        private bool DefaultCheck(eFile file, int rank)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
             if (File == file || Rank == rank) return true;
 
             return false;
-        }
-
-        public override bool Move(eFile file, int rank)
-        {
-            if (!DefaultCheck(file, rank)) return false;
-
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Rook is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
-            return true;
-        }
-
-        public override bool Attack(eFile file, int rank)
-        {
-            return DefaultCheck(file, rank);
         }
 
         public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
@@ -332,9 +288,9 @@ namespace ChessProject
         {
         }
 
-        private bool DefaultCheck(eFile file, int rank)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
             if (File == file || Rank == rank) return true;
 
             for (var i = 1; i < 9 - Rank; i++)
@@ -354,23 +310,6 @@ namespace ChessProject
             }
 
             return false;
-        }
-
-        public override bool Move(eFile file, int rank)
-        {
-            if (!DefaultCheck(file, rank)) return false;
-
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Queen is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
-            return true;
-        }
-
-        public override bool Attack(eFile file, int rank)
-        {
-            return DefaultCheck(file, rank);
         }
 
         public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
@@ -404,11 +343,11 @@ namespace ChessProject
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 == file && rank <= l.Item2);
+                    list.RemoveAll(l => l.Item1 == file && rank < l.Item2);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 == file && l.Item2 <= rank);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 < rank);
                 }
             }
 
@@ -416,11 +355,11 @@ namespace ChessProject
             {
                 if (File < file)
                 {
-                    list.RemoveAll(l => l.Item2 == rank && file <= l.Item1);
+                    list.RemoveAll(l => l.Item2 == rank && file < l.Item1);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item2 == rank && l.Item1 <= file);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 < file);
                 }
             }
         }
@@ -433,30 +372,13 @@ namespace ChessProject
         {
         }
 
-        private bool DefaultCheck(eFile file, int rank)
+        public override bool Move(eFile file, int rank)
         {
-            if (InvalidMove(file, rank)) return false;
+            if (!CheckMovePostion(file, rank)) return false;
             if (File + 1 < file || Rank + 1 < rank) return false;
             if (File - 1 > file || Rank - 1 > rank) return false;
 
             return true;
-        }
-
-        public override bool Move(eFile file, int rank)
-        {
-            if (!DefaultCheck(file, rank)) return false;
-
-            Console.WriteLine($"{File}{Rank} -> {file}{rank}. Queen is moved.");
-
-            m_file = file;
-            m_rank = rank;
-
-            return true;
-        }
-
-        public override bool Attack(eFile file, int rank)
-        {
-            return DefaultCheck(file, rank);
         }
     }
 }

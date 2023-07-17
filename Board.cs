@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace ChessProject
@@ -18,8 +19,12 @@ namespace ChessProject
             //PlaceDefaultPosition();
 
             AddPiece(new Queen(eColor.Black, eFile.d, 5));
-            AddPiece(new Pawn(eColor.White, eFile.b, 4));
-            AddPiece(new Pawn(eColor.White, eFile.e, 6));
+            AddPiece(new Pawn(eColor.White, eFile.c, 4));
+            AddPiece(new Pawn(eColor.White, eFile.d, 4));
+            AddPiece(new Pawn(eColor.White, eFile.e, 4));
+            AddPiece(new Pawn(eColor.Black, eFile.c, 6));
+            AddPiece(new Pawn(eColor.Black, eFile.d, 6));
+            AddPiece(new Pawn(eColor.Black, eFile.e, 6));
         }
 
         private void PlaceDefaultPosition()
@@ -47,6 +52,9 @@ namespace ChessProject
 
         private bool AddPiece<T>(T piece) where T : Piece
         {
+            Debug.Assert(eFile.a <= piece.File && piece.File < eFile.Max, "invalid file.");
+            Debug.Assert(1 <= piece.Rank && piece.Rank < 9, "invalid rank.");
+
             if (m_pieces.Any(p => p.File == piece.File && p.Rank == piece.Rank))
             {
                 Console.WriteLine("Add failed. duplicated position.");
@@ -57,9 +65,9 @@ namespace ChessProject
             return true;
         }
 
-        public Piece GetPiece(eFile width, int height)
+        public Piece GetPiece(eFile file, int rank)
         {
-            var selectPiece = m_pieces.Where(p => p.File == width && p.Rank == height).SingleOrDefault();
+            var selectPiece = m_pieces.Where(p => p.File == file && p.Rank == rank).SingleOrDefault();
             if (selectPiece == null)
             {
                 return null;
@@ -68,41 +76,86 @@ namespace ChessProject
             return selectPiece;
         }
 
-        public bool MovePiece<T>(T piece, eFile newWidth, int newHeight) where T : Piece
+        public bool MovePiece<T>(T piece, eFile targetFile, int targetRank) where T : Piece
         {
             var sameColorPiece = m_pieces
                 .Where(p => p.Color == piece.Color)
-                .Where(p => p.File == newWidth && p.Rank == newHeight)
+                .Where(p => p.File == targetFile && p.Rank == targetRank)
                 .SingleOrDefault();
             if (sameColorPiece != null)
             {
                 return false;
             }
 
-            var prevWidth = piece.File;
-            var prevHeight = piece.Rank;
-
-            if (!piece.Move(newWidth, newHeight))
+            if (!piece.Move(targetFile, targetRank))
             {
                 return false;
             }
 
+            var areaList = new List<(eFile, int)>();
+
+            for (var i = eFile.a; i < eFile.Max; i++)
+            {
+                for (var j = 8; 0 < j; j--)
+                {
+                    if (piece.Move(i, j))
+                    {
+                        areaList.Add((i, j));
+                    }
+                }
+            }
+
+            var copyArea = areaList.ToList();
+
+            foreach (var area in areaList)
+            {
+                if (piece.Symbol == "P")
+                {
+                    var targetPiece = GetPiece(area.Item1, area.Item2);
+                    if (targetPiece == null)
+                    {
+                        piece.AttackAreaExcept(copyArea, area.Item1, area.Item2);
+                    }
+                    else
+                    {
+                        if (piece.File == targetPiece.File)
+                        {
+                            copyArea.RemoveAll(l => l.Item1 == piece.File);
+                        }
+                    }
+                }
+                else
+                {
+                    var targetPiece = GetPiece(area.Item1, area.Item2);
+                    if (targetPiece != null)
+                    {
+                        piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
+                    }
+                }
+            }
+
+            if (!copyArea.Contains((targetFile, targetRank)))
+            {
+                return false;
+            }
+
+            m_history.Push((piece.File, piece.Rank, piece));
+
+            Console.WriteLine($"{piece.File}{piece.Rank} -> {targetFile}{targetRank}. {piece} is moved.");
+
+            piece.SetFile = targetFile;
+            piece.SetRank = targetRank;
+
             var target = m_pieces
                 .Where(p => p.Color != piece.Color)
-                .Where(p => p.File == newWidth && p.Rank == newHeight)
+                .Where(p => p.File == targetFile && p.Rank == targetRank)
                 .SingleOrDefault();
             if (target != null)
             {
                 m_pieces.Remove(target);
             }
 
-            m_history.Push((prevWidth, prevHeight, piece));
             return true;
-        }
-
-        public bool AttackPiece<T>(T piece, eFile targetWidth, int targetHeight) where T : Piece
-        {
-            return piece.Attack(targetWidth, targetHeight);
         }
 
         public void PrintAllBoard()
@@ -149,10 +202,8 @@ namespace ChessProject
             {
                 for (var j = 8; 0 < j; j--)
                 {
-                    if (AttackPiece(piece, i, j))
+                    if (piece.Move(i, j))
                     {
-                        if (piece.File == i && piece.Rank == j) continue;
-
                         areaList.Add((i, j));
                     }
                 }
@@ -162,10 +213,28 @@ namespace ChessProject
 
             foreach (var area in areaList)
             {
-                var targetPiece = GetPiece(area.Item1, area.Item2);
-                if (targetPiece != null)
+                if (piece.Symbol == "P")
                 {
-                    piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
+                    var targetPiece = GetPiece(area.Item1, area.Item2);
+                    if (targetPiece == null)
+                    {
+                        piece.AttackAreaExcept(copyArea, area.Item1, area.Item2);
+                    }
+                    else
+                    {
+                        if (piece.File == targetPiece.File)
+                        {
+                            copyArea.RemoveAll(l => l.Item1 == piece.File);
+                        }
+                    }
+                }
+                else
+                {
+                    var targetPiece = GetPiece(area.Item1, area.Item2);
+                    if (targetPiece != null)
+                    {
+                        piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
+                    }
                 }
             }
 
