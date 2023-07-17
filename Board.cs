@@ -16,15 +16,7 @@ namespace ChessProject
 
         public Board()
         {
-            //PlaceDefaultPosition();
-
-            AddPiece(new Queen(eColor.Black, eFile.d, 5));
-            AddPiece(new Pawn(eColor.White, eFile.c, 4));
-            AddPiece(new Pawn(eColor.White, eFile.d, 4));
-            AddPiece(new Pawn(eColor.White, eFile.e, 4));
-            AddPiece(new Pawn(eColor.Black, eFile.c, 6));
-            AddPiece(new Pawn(eColor.Black, eFile.d, 6));
-            AddPiece(new Pawn(eColor.Black, eFile.e, 6));
+            PlaceDefaultPosition();
         }
 
         private void PlaceDefaultPosition()
@@ -67,13 +59,7 @@ namespace ChessProject
 
         public Piece GetPiece(eFile file, int rank)
         {
-            var selectPiece = m_pieces.Where(p => p.File == file && p.Rank == rank).SingleOrDefault();
-            if (selectPiece == null)
-            {
-                return null;
-            }
-
-            return selectPiece;
+            return m_pieces.Where(p => p.File == file && p.Rank == rank).SingleOrDefault();
         }
 
         public bool MovePiece<T>(T piece, eFile targetFile, int targetRank) where T : Piece
@@ -92,49 +78,8 @@ namespace ChessProject
                 return false;
             }
 
-            var areaList = new List<(eFile, int)>();
-
-            for (var i = eFile.a; i < eFile.Max; i++)
-            {
-                for (var j = 8; 0 < j; j--)
-                {
-                    if (piece.Move(i, j))
-                    {
-                        areaList.Add((i, j));
-                    }
-                }
-            }
-
-            var copyArea = areaList.ToList();
-
-            foreach (var area in areaList)
-            {
-                if (piece.Symbol == "P")
-                {
-                    var targetPiece = GetPiece(area.Item1, area.Item2);
-                    if (targetPiece == null)
-                    {
-                        piece.AttackAreaExcept(copyArea, area.Item1, area.Item2);
-                    }
-                    else
-                    {
-                        if (piece.File == targetPiece.File)
-                        {
-                            copyArea.RemoveAll(l => l.Item1 == piece.File);
-                        }
-                    }
-                }
-                else
-                {
-                    var targetPiece = GetPiece(area.Item1, area.Item2);
-                    if (targetPiece != null)
-                    {
-                        piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
-                    }
-                }
-            }
-
-            if (!copyArea.Contains((targetFile, targetRank)))
+            var area = GetMoveArea(piece);
+            if (!area.Contains((targetFile, targetRank)))
             {
                 return false;
             }
@@ -196,6 +141,13 @@ namespace ChessProject
         private void SelectAttackArea(eFile width, int height)
         {
             var piece = GetPiece(width, height);
+            var area = GetMoveArea(piece);
+
+            PrintAttackArea(area);
+        }
+
+        private List<(eFile, int)> GetMoveArea(Piece piece)
+        {
             var areaList = new List<(eFile, int)>();
 
             for (var i = eFile.a; i < eFile.Max; i++)
@@ -213,32 +165,14 @@ namespace ChessProject
 
             foreach (var area in areaList)
             {
-                if (piece.Symbol == "P")
+                var targetPiece = GetPiece(area.Item1, area.Item2);
+                if (targetPiece != null)
                 {
-                    var targetPiece = GetPiece(area.Item1, area.Item2);
-                    if (targetPiece == null)
-                    {
-                        piece.AttackAreaExcept(copyArea, area.Item1, area.Item2);
-                    }
-                    else
-                    {
-                        if (piece.File == targetPiece.File)
-                        {
-                            copyArea.RemoveAll(l => l.Item1 == piece.File);
-                        }
-                    }
-                }
-                else
-                {
-                    var targetPiece = GetPiece(area.Item1, area.Item2);
-                    if (targetPiece != null)
-                    {
-                        piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
-                    }
+                    piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
                 }
             }
 
-            PrintAttackArea(copyArea);
+            return copyArea;
         }
 
         private void PrintAttackArea(List<(eFile, int)> attackList)
@@ -277,9 +211,7 @@ namespace ChessProject
 
         public void Run()
         {
-            Console.WriteLine("Hello Chess World!");
-
-            SelectAttackArea(eFile.d, 5);
+            SelectAttackArea(eFile.d, 2);
 
             while (true)
             {

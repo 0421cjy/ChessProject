@@ -82,6 +82,7 @@ namespace ChessProject
         public override bool Move(eFile file, int rank)
         {
             if (!CheckMovePostion(file, rank)) return false;
+            if (File != file) return false;
 
             if (Color == eColor.White)
             {
@@ -110,40 +111,39 @@ namespace ChessProject
                 }
             }
 
-            if (File != file)
-            {
-                if (!Attack(file, rank))
-                {
-                    return false;
-                }
-            }
-
             return true;
-        }
-
-        public bool Attack(eFile file, int rank)
-        {
-            if (Color == eColor.White)
-            {
-                if (rank == Rank + 1 && (file == File - 1 || file == File + 1))
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                if (rank == Rank - 1 && (file == File - 1 || file == File + 1))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
         {
-            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
+            if (File == file)
+            {
+                if (Color == eColor.White && Rank + 1 == rank)
+                {
+                    list.RemoveAll(l => l.Item1 == File && l.Item2 > Rank + 1);
+                }
+                else if (Color == eColor.Black && Rank - 1 == rank)
+                {
+                    list.RemoveAll(l => l.Item1 == File && l.Item2 < Rank - 1);
+                }
+            }
+            else
+            {
+                if (Color == eColor.White)
+                {
+                    if (rank == Rank + 1 && (file == File - 1 || file == File + 1))
+                    {
+                        list.Add((file, rank));
+                    }
+                }
+                else
+                {
+                    if (rank == Rank - 1 && (file == File - 1 || file == File + 1))
+                    {
+                        list.Add((file, rank));
+                    }
+                }
+            }
         }
 
         public void Promotion()
@@ -171,11 +171,6 @@ namespace ChessProject
             if (File + 2 < file || File - 2 > file) return false;
 
             return true;
-        }
-
-        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
-        {
-            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
         }
     }
 
@@ -215,22 +210,22 @@ namespace ChessProject
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 <= file && rank <= l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 > rank);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 <= file && rank >= l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
                 }
             }
             else
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 >= file && rank <= l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && l.Item2 > rank);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 >= file && rank >= l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && l.Item2 < rank);
                 }
             }
         }
@@ -259,11 +254,11 @@ namespace ChessProject
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 == file && rank <= l.Item2);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 > rank);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 == file && l.Item2 <= rank);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 < rank);
                 }
             }
 
@@ -271,11 +266,11 @@ namespace ChessProject
             {
                 if (File < file)
                 {
-                    list.RemoveAll(l => l.Item2 == rank && file <= l.Item1);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 > file);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item2 == rank && l.Item1 <= file);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 < file);
                 }
             }
         }
@@ -320,22 +315,22 @@ namespace ChessProject
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 < file && rank < l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 > rank);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 < file && rank > l.Item2);
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
                 }
             }
             else
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 > file && rank < l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && l.Item2 > rank);
                 }
                 else
                 {
-                    list.RemoveAll(l => l.Item1 > file && rank > l.Item2);
+                    list.RemoveAll(l => l.Item1 > file && l.Item2 < rank);
                 }
             }
 
@@ -343,7 +338,7 @@ namespace ChessProject
             {
                 if (Rank < rank)
                 {
-                    list.RemoveAll(l => l.Item1 == file && rank < l.Item2);
+                    list.RemoveAll(l => l.Item1 == file && l.Item2 > rank);
                 }
                 else
                 {
@@ -355,7 +350,7 @@ namespace ChessProject
             {
                 if (File < file)
                 {
-                    list.RemoveAll(l => l.Item2 == rank && file < l.Item1);
+                    list.RemoveAll(l => l.Item2 == rank && l.Item1 > file);
                 }
                 else
                 {
