@@ -13,10 +13,14 @@ namespace ChessProject
 
         private List<Piece> m_pieces = new ();
         protected Stack<(eFile, int, Piece)> m_history = new ();
+        private Queue<eColor> m_turn = new();
 
         public Board()
         {
             PlaceDefaultPosition();
+
+            m_turn.Enqueue(eColor.White);
+            m_turn.Enqueue(eColor.Black);
         }
 
         private void PlaceDefaultPosition()
@@ -276,17 +280,28 @@ namespace ChessProject
                 var targetPiece = GetPiece((eFile)width, height);
                 if (targetPiece != null)
                 {
+                    if (targetPiece.Color != m_turn.Peek())
+                    {
+                        Console.WriteLine($"invalid turn. {m_turn.Peek()} is turn.");
+                        continue;
+                    }
+
                     if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
                     {
                         Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
+                        continue;
                     }
                 }
                 else
                 {
                     Console.WriteLine($"move failed {(eFile)width}{height}. invalid piece.");
+                    continue;
                 }
 
                 ShowAttackArea(targetPiece.File, targetPiece.Rank);
+
+                var color = m_turn.Dequeue();
+                m_turn.Enqueue(color);
             }
         }
     }
