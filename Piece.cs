@@ -55,9 +55,10 @@ namespace ChessProject
 
         public abstract bool Move(eFile file, int rank);
 
-        public virtual void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank) { }
+        public virtual void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank) { }
+        public virtual void NeedTargetPiece(List<(eFile, int)> list, eFile file, int rank) { }
 
-        protected bool CheckMovePostion(eFile file, int rank)
+        protected bool CheckDefaultMovePostion(eFile file, int rank)
         {
             if (file < eFile.a || eFile.h < file) return false;
             if (rank < 1 || 8 < rank) return false;
@@ -81,13 +82,14 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
-            if (File != file) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
 
             if (Color == eColor.White)
             {
                 if (rank <= Rank) return false;
                 if (Rank + 2 < rank) return false;
+                if (File + 1 < file || File - 1 > file) return false;
+                if ((File + 1 == file || File - 1 == file) && (rank == Rank + 2)) return false;
 
                 if (rank == Rank + 2)
                 {
@@ -101,6 +103,8 @@ namespace ChessProject
             {
                 if (Rank <= rank) return false;
                 if (rank < Rank - 2) return false;
+                if (File + 1 < file || File - 1 > file) return false;
+                if ((File + 1 == file || File - 1 == file) && (rank == Rank - 2)) return false;
 
                 if (rank == Rank - 2)
                 {
@@ -114,7 +118,7 @@ namespace ChessProject
             return true;
         }
 
-        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file)
             {
@@ -127,23 +131,13 @@ namespace ChessProject
                     list.RemoveAll(l => l.Item1 == File && l.Item2 < Rank - 1);
                 }
             }
-            else
-            {
-                if (Color == eColor.White)
-                {
-                    if (rank == Rank + 1 && (file == File - 1 || file == File + 1))
-                    {
-                        list.Add((file, rank));
-                    }
-                }
-                else
-                {
-                    if (rank == Rank - 1 && (file == File - 1 || file == File + 1))
-                    {
-                        list.Add((file, rank));
-                    }
-                }
-            }
+        }
+
+        public override void NeedTargetPiece(List<(eFile, int)> list, eFile file, int rank)
+        {
+            if (m_file == file) return;
+
+            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
         }
 
         public void Promotion()
@@ -160,7 +154,7 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
             if (File == file) return false;
             if (Rank == rank) return false;
             if (Rank + 1 == rank && (File + 1 == file || File - 1 == file)) return false;
@@ -183,7 +177,7 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
 
             for (var i = 1; i < 9 - Rank; i++)
             {
@@ -204,7 +198,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File > file)
             {
@@ -217,7 +211,8 @@ namespace ChessProject
                     list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
                 }
             }
-            else
+
+            if (File < file)
             {
                 if (Rank < rank)
                 {
@@ -240,13 +235,13 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
             if (File == file || Rank == rank) return true;
 
             return false;
         }
 
-        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
@@ -285,7 +280,7 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
             if (File == file || Rank == rank) return true;
 
             for (var i = 1; i < 9 - Rank; i++)
@@ -307,7 +302,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void AttackAreaExcept(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
@@ -322,7 +317,8 @@ namespace ChessProject
                     list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
                 }
             }
-            else
+            
+            if (File < file)
             {
                 if (Rank < rank)
                 {
@@ -369,7 +365,7 @@ namespace ChessProject
 
         public override bool Move(eFile file, int rank)
         {
-            if (!CheckMovePostion(file, rank)) return false;
+            if (!CheckDefaultMovePostion(file, rank)) return false;
             if (File + 1 < file || Rank + 1 < rank) return false;
             if (File - 1 > file || Rank - 1 > rank) return false;
 

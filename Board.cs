@@ -59,15 +59,14 @@ namespace ChessProject
 
         public Piece GetPiece(eFile file, int rank)
         {
-            return m_pieces.Where(p => p.File == file && p.Rank == rank).SingleOrDefault();
+            return m_pieces.SingleOrDefault(p => p.File == file && p.Rank == rank);
         }
 
         public bool MovePiece<T>(T piece, eFile targetFile, int targetRank) where T : Piece
         {
             var sameColorPiece = m_pieces
                 .Where(p => p.Color == piece.Color)
-                .Where(p => p.File == targetFile && p.Rank == targetRank)
-                .SingleOrDefault();
+                .SingleOrDefault(p => p.File == targetFile && p.Rank == targetRank);
             if (sameColorPiece != null)
             {
                 return false;
@@ -103,7 +102,60 @@ namespace ChessProject
             return true;
         }
 
-        public void PrintAllBoard()
+        private void ShowAttackArea(eFile width, int height)
+        {
+            var piece = GetPiece(width, height);
+            var area = GetMoveArea(piece);
+
+            PrintAttackArea(area);
+
+            foreach(var pos in area)
+            {
+                var targetPiece = GetPiece(pos.Item1, pos.Item2);
+                if (targetPiece != null)
+                {
+                    if (piece.Color != targetPiece.Color && targetPiece.Symbol == "K")
+                    {
+                        Console.WriteLine($"{targetPiece.Color} is check");
+                    }
+                }
+            }
+        }
+
+        private List<(eFile, int)> GetMoveArea(Piece piece)
+        {
+            var canMoveArea = new List<(eFile, int)>();
+
+            for (var i = eFile.a; i < eFile.Max; i++)
+            {
+                for (var j = 8; 0 < j; j--)
+                {
+                    if (piece.Move(i, j))
+                    {
+                        canMoveArea.Add((i, j));
+                    }
+                }
+            }
+
+            var copyArea = canMoveArea.ToList();
+
+            foreach (var area in canMoveArea)
+            {
+                var occupiedPiece = GetPiece(area.Item1, area.Item2);
+                if (occupiedPiece != null)
+                {
+                    piece.ExceptBlockArea(copyArea, occupiedPiece.File, occupiedPiece.Rank);
+                }
+                else
+                {
+                    piece.NeedTargetPiece(copyArea, area.Item1, area.Item2);
+                }
+            }
+
+            return copyArea;
+        }
+
+        private void PrintAllBoard()
         {
             for (eFile i = 0; i < eFile.Max; i++)
             {
@@ -136,43 +188,6 @@ namespace ChessProject
 
                 Console.WriteLine("+");
             }
-        }
-
-        private void SelectAttackArea(eFile width, int height)
-        {
-            var piece = GetPiece(width, height);
-            var area = GetMoveArea(piece);
-
-            PrintAttackArea(area);
-        }
-
-        private List<(eFile, int)> GetMoveArea(Piece piece)
-        {
-            var areaList = new List<(eFile, int)>();
-
-            for (var i = eFile.a; i < eFile.Max; i++)
-            {
-                for (var j = 8; 0 < j; j--)
-                {
-                    if (piece.Move(i, j))
-                    {
-                        areaList.Add((i, j));
-                    }
-                }
-            }
-
-            var copyArea = areaList.ToList();
-
-            foreach (var area in areaList)
-            {
-                var targetPiece = GetPiece(area.Item1, area.Item2);
-                if (targetPiece != null)
-                {
-                    piece.AttackAreaExcept(copyArea, targetPiece.File, targetPiece.Rank);
-                }
-            }
-
-            return copyArea;
         }
 
         private void PrintAttackArea(List<(eFile, int)> attackList)
@@ -211,18 +226,16 @@ namespace ChessProject
 
         public void Run()
         {
-            SelectAttackArea(eFile.d, 2);
-
             while (true)
             {
                 PrintAllBoard();
 
-                Console.Write("insert width height and new width, new height : ");
+                Console.Write("insert start width, height and target width, height : ");
 
                 var input = Console.ReadLine();
                 if (input == "exit" || input == "EXIT") break;
 
-                if (input.Length < 4) continue;
+                if (input.Length < 4 || 4 < input.Length) continue;
 
                 if (!Int32.TryParse(input[1].ToString(), out var height))
                 {
@@ -261,10 +274,19 @@ namespace ChessProject
                 };
 
                 var targetPiece = GetPiece((eFile)width, height);
-                if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
+                if (targetPiece != null)
                 {
-                    Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
+                    if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
+                    {
+                        Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
+                    }
                 }
+                else
+                {
+                    Console.WriteLine($"move failed {(eFile)width}{height}. invalid piece.");
+                }
+
+                ShowAttackArea(targetPiece.File, targetPiece.Rank);
             }
         }
     }
