@@ -55,8 +55,9 @@ namespace ChessProject
 
         public abstract bool Move(eFile file, int rank);
 
-        public virtual void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank) { }
+        public virtual void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank) { }
         public virtual void NeedTargetPiece(List<(eFile, int)> list, eFile file, int rank) { }
+        public virtual void IsAttacked() { }
 
         protected bool CheckDefaultMovePostion(eFile file, int rank)
         {
@@ -118,7 +119,7 @@ namespace ChessProject
             return true;
         }
 
-        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file)
             {
@@ -198,27 +199,29 @@ namespace ChessProject
             return false;
         }
 
-        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
         {
-            if (File > file)
+            for (var i = 1; i < 9 - Rank; i++)
             {
-                if (Rank < rank)
+                if (Rank + i == rank && File - i == file)
                 {
                     list.RemoveAll(l => l.Item1 < file && l.Item2 > rank);
                 }
-                else
-                {
-                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
-                }
-            }
 
-            if (File < file)
-            {
-                if (Rank < rank)
+                if (Rank + i == rank && File + i == file)
                 {
                     list.RemoveAll(l => l.Item1 > file && l.Item2 > rank);
                 }
-                else
+            }
+
+            for (var i = 1; i < Rank; i++)
+            {
+                if (Rank - i == rank && File - i == file)
+                {
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
+                }
+
+                if (Rank - i == rank && File + i == file)
                 {
                     list.RemoveAll(l => l.Item1 > file && l.Item2 < rank);
                 }
@@ -241,7 +244,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
@@ -302,29 +305,31 @@ namespace ChessProject
             return false;
         }
 
-        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
-            if (File > file)
+            for (var i = 1; i < 9 - Rank; i++)
             {
-                if (Rank < rank)
+                if (Rank + i == rank && File - i == file)
                 {
                     list.RemoveAll(l => l.Item1 < file && l.Item2 > rank);
                 }
-                else
-                {
-                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
-                }
-            }
-            
-            if (File < file)
-            {
-                if (Rank < rank)
+
+                if (Rank + i == rank && File + i == file)
                 {
                     list.RemoveAll(l => l.Item1 > file && l.Item2 > rank);
                 }
-                else
+            }
+
+            for (var i = 1; i < Rank; i++)
+            {
+                if (Rank - i == rank && File - i == file)
+                {
+                    list.RemoveAll(l => l.Item1 < file && l.Item2 < rank);
+                }
+
+                if (Rank - i == rank && File + i == file)
                 {
                     list.RemoveAll(l => l.Item1 > file && l.Item2 < rank);
                 }

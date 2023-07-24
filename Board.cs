@@ -17,7 +17,13 @@ namespace ChessProject
 
         public Board()
         {
-            PlaceDefaultPosition();
+            //PlaceDefaultPosition();
+
+            AddPiece(new Queen(eColor.White, eFile.d, 7));
+            AddPiece(new Queen(eColor.Black, eFile.c, 8));
+            AddPiece(new King(eColor.Black, eFile.e, 8));
+            AddPiece(new Pawn(eColor.Black, eFile.c, 7));
+            AddPiece(new Pawn(eColor.Black, eFile.e, 7));
 
             m_turn.Enqueue(eColor.White);
             m_turn.Enqueue(eColor.Black);
@@ -112,18 +118,6 @@ namespace ChessProject
             var area = GetMoveArea(piece);
 
             PrintAttackArea(area);
-
-            foreach(var pos in area)
-            {
-                var targetPiece = GetPiece(pos.Item1, pos.Item2);
-                if (targetPiece != null)
-                {
-                    if (piece.Color != targetPiece.Color && targetPiece.Symbol == "K")
-                    {
-                        Console.WriteLine($"{targetPiece.Color} is check");
-                    }
-                }
-            }
         }
 
         private List<(eFile, int)> GetMoveArea(Piece piece)
@@ -141,22 +135,86 @@ namespace ChessProject
                 }
             }
 
-            var copyArea = canMoveArea.ToList();
+            var resultArea = canMoveArea.ToList();
 
             foreach (var area in canMoveArea)
             {
                 var occupiedPiece = GetPiece(area.Item1, area.Item2);
                 if (occupiedPiece != null)
                 {
-                    piece.ExceptBlockArea(copyArea, occupiedPiece.File, occupiedPiece.Rank);
+                    piece.CalcBlockedArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
                 }
                 else
                 {
-                    piece.NeedTargetPiece(copyArea, area.Item1, area.Item2);
+                    piece.NeedTargetPiece(resultArea, area.Item1, area.Item2);
                 }
             }
 
-            return copyArea;
+            return resultArea;
+        }
+
+        private List<(eFile, int)> GetTotalMoveArea(eColor color)
+        {
+            var totalMoveArea = new List<(eFile, int)>();
+
+            foreach(var piece in m_pieces)
+            {
+                if (piece.Color != color) continue;
+
+                var canMoveArea = new List<(eFile, int)>();
+
+                for (var i = eFile.a; i < eFile.Max; i++)
+                {
+                    for (var j = 8; 0 < j; j--)
+                    {
+                        if (piece.Move(i, j))
+                        {
+                            canMoveArea.Add((i, j));
+                        }
+                    }
+                }
+
+                var resultArea = canMoveArea.ToList();
+
+                foreach (var area in canMoveArea)
+                {
+                    var occupiedPiece = GetPiece(area.Item1, area.Item2);
+                    if (occupiedPiece != null)
+                    {
+                        piece.CalcBlockedArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
+                    }
+                    else
+                    {
+                        piece.NeedTargetPiece(resultArea, area.Item1, area.Item2);
+                    }
+                }
+
+                totalMoveArea.AddRange(resultArea);
+            }
+
+            return totalMoveArea;
+        }
+
+        private bool IsCheck(eColor color, List<(eFile, int)> areas)
+        {
+            foreach(var area in areas)
+            {
+                var searchPiece = GetPiece(area.Item1, area.Item2);
+                if (searchPiece != null)
+                {
+                    if (searchPiece.Color != color && searchPiece.Symbol == "K")
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void IsCheckMate()
+        {
+
         }
 
         private void PrintAllBoard()
@@ -283,13 +341,22 @@ namespace ChessProject
                     if (targetPiece.Color != m_turn.Peek())
                     {
                         Console.WriteLine($"invalid turn. {m_turn.Peek()} is turn.");
-                        continue;
+                        //continue;
                     }
 
+                    // 체크되는 상황으로는 이동불가
                     if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
                     {
                         Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
                         continue;
+                    }
+
+                    var colorArea = GetTotalMoveArea(targetPiece.Color);
+                    PrintAttackArea(colorArea);
+
+                    if (IsCheck(targetPiece.Color, colorArea))
+                    {
+                        Console.WriteLine($"{targetPiece.Color} is check.");
                     }
                 }
                 else
@@ -298,7 +365,7 @@ namespace ChessProject
                     continue;
                 }
 
-                ShowAttackArea(targetPiece.File, targetPiece.Rank);
+                //ShowAttackArea(targetPiece.File, targetPiece.Rank);
 
                 var color = m_turn.Dequeue();
                 m_turn.Enqueue(color);
