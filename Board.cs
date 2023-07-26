@@ -17,13 +17,7 @@ namespace ChessProject
 
         public Board()
         {
-            //PlaceDefaultPosition();
-
-            AddPiece(new Queen(eColor.White, eFile.d, 7));
-            AddPiece(new Queen(eColor.Black, eFile.c, 8));
-            AddPiece(new King(eColor.Black, eFile.e, 8));
-            AddPiece(new Pawn(eColor.Black, eFile.c, 7));
-            AddPiece(new Pawn(eColor.Black, eFile.e, 7));
+            PlaceDefaultPosition();
 
             m_turn.Enqueue(eColor.White);
             m_turn.Enqueue(eColor.Black);
@@ -64,6 +58,7 @@ namespace ChessProject
             }
 
             m_pieces.Add(piece);
+
             return true;
         }
 
@@ -112,7 +107,7 @@ namespace ChessProject
             return true;
         }
 
-        private void ShowAttackArea(eFile width, int height)
+        private void GetAttackArea(eFile width, int height)
         {
             var piece = GetPiece(width, height);
             var area = GetMoveArea(piece);
@@ -146,7 +141,7 @@ namespace ChessProject
                 }
                 else
                 {
-                    piece.NeedTargetPiece(resultArea, area.Item1, area.Item2);
+                    piece.NeedEnemyPiece(resultArea, area.Item1, area.Item2);
                 }
             }
 
@@ -185,7 +180,7 @@ namespace ChessProject
                     }
                     else
                     {
-                        piece.NeedTargetPiece(resultArea, area.Item1, area.Item2);
+                        piece.NeedEnemyPiece(resultArea, area.Item1, area.Item2);
                     }
                 }
 
@@ -197,19 +192,11 @@ namespace ChessProject
 
         private bool IsCheck(eColor color, List<(eFile, int)> areas)
         {
-            foreach(var area in areas)
-            {
-                var searchPiece = GetPiece(area.Item1, area.Item2);
-                if (searchPiece != null)
-                {
-                    if (searchPiece.Color != color && searchPiece.Symbol == "K")
-                    {
-                        return true;
-                    }
-                }
-            }
+            var attackedPieces = m_pieces
+                .Where(p => p.Color != color)
+                .Where(p => areas.Any(a => a.Item1 == p.File && a.Item2 == p.Rank));
 
-            return false;
+            return attackedPieces.Any(t => t.IsInChecked());
         }
 
         private void IsCheckMate()
@@ -286,6 +273,40 @@ namespace ChessProject
             }
         }
 
+        private (eFile, int, eFile, int) InputDecoder(string input)
+        {
+            Func<char, int> fileDecoder = file =>
+            {
+                return file switch
+                {
+                    'a' => 0,
+                    'b' => 1,
+                    'c' => 2,
+                    'd' => 3,
+                    'e' => 4,
+                    'f' => 5,
+                    'g' => 6,
+                    'h' => 7,
+                    _ => throw new ArgumentException($"invalid input. {input}"),
+                };
+            };
+
+            var file = fileDecoder(input[0]);
+            var newFile = fileDecoder(input[2]);
+
+            if (!Int32.TryParse(input[1].ToString(), out var rank))
+            {
+                throw new ArgumentException($"invalid input. {input}");
+            }
+
+            if (!Int32.TryParse(input[3].ToString(), out var newRank))
+            {
+                throw new ArgumentException($"invalid input. {input}");
+            }
+
+            return ((eFile)file, rank, (eFile)newFile, newRank);
+        }
+
         public void Run()
         {
             while (true)
@@ -294,75 +315,46 @@ namespace ChessProject
 
                 Console.Write("insert start width, height and target width, height : ");
 
-                var input = Console.ReadLine();
-                if (input == "exit" || input == "EXIT") break;
-
-                if (input.Length < 4 || 4 < input.Length) continue;
-
-                if (!Int32.TryParse(input[1].ToString(), out var height))
+                try
                 {
-                    continue;
-                }
+                    var input = Console.ReadLine();
+                    if (input == "exit" || input == "EXIT") break;
+                    if (input.Length < 4 || 4 < input.Length) continue;
 
-                if (!Int32.TryParse(input[3].ToString(), out var newHeight))
-                {
-                    continue;
-                }
+                    var pos = InputDecoder(input);
 
-                var width = input[0] switch
-                {
-                    'a' => 0,
-                    'b' => 1,
-                    'c' => 2,
-                    'd' => 3,
-                    'e' => 4,
-                    'f' => 5,
-                    'g' => 6,
-                    'h' => 7,
-                    _ => -1,
-                };
-
-                var newWidth = input[2] switch
-                {
-                    'a' => 0,
-                    'b' => 1,
-                    'c' => 2,
-                    'd' => 3,
-                    'e' => 4,
-                    'f' => 5,
-                    'g' => 6,
-                    'h' => 7,
-                    _ => -1,
-                };
-
-                var targetPiece = GetPiece((eFile)width, height);
-                if (targetPiece != null)
-                {
-                    if (targetPiece.Color != m_turn.Peek())
+                    var controlPiece = GetPiece(pos.Item1, pos.Item2);
+                    if (controlPiece != null)
                     {
-                        Console.WriteLine($"invalid turn. {m_turn.Peek()} is turn.");
-                        //continue;
+                        if (controlPiece.Color != m_turn.Peek())
+                        {
+                            Console.WriteLine($"invalid turn. {m_turn.Peek()} is turn.");
+                            //continue;
+                        }
+
+                        if (!MovePiece(controlPiece, pos.Item3, pos.Item4))
+                        {
+                            Console.WriteLine($"moved failed {controlPiece.File}{controlPiece.Rank} -> {pos.Item3}{pos.Item4}");
+                            continue;
+                        }
+
+                        var colorArea = GetTotalMoveArea(controlPiece.Color);
+                        PrintAttackArea(colorArea);
+
+                        if (IsCheck(controlPiece.Color, colorArea))
+                        {
+
+                        }
                     }
-
-                    // 체크되는 상황으로는 이동불가
-                    if (!MovePiece(targetPiece, (eFile)newWidth, newHeight))
+                    else
                     {
-                        Console.WriteLine($"moved failed {targetPiece.File}{targetPiece.Rank} -> {(eFile)newWidth}{newHeight}");
+                        Console.WriteLine($"move failed {pos.Item1}{pos.Item2}. invalid piece.");
                         continue;
                     }
-
-                    var colorArea = GetTotalMoveArea(targetPiece.Color);
-                    PrintAttackArea(colorArea);
-
-                    if (IsCheck(targetPiece.Color, colorArea))
-                    {
-                        Console.WriteLine($"{targetPiece.Color} is check.");
-                    }
                 }
-                else
+                catch(ArgumentException e)
                 {
-                    Console.WriteLine($"move failed {(eFile)width}{height}. invalid piece.");
-                    continue;
+                    Console.WriteLine($"{e.GetType().Name}: {e.Message}");
                 }
 
                 //ShowAttackArea(targetPiece.File, targetPiece.Rank);

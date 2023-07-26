@@ -54,16 +54,15 @@ namespace ChessProject
         }
 
         public abstract bool Move(eFile file, int rank);
-
         public virtual void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank) { }
-        public virtual void NeedTargetPiece(List<(eFile, int)> list, eFile file, int rank) { }
-        public virtual void IsAttacked() { }
+        public virtual void NeedEnemyPiece(List<(eFile, int)> list, eFile file, int rank) { }
+        public virtual bool IsInChecked() { return false; }
 
         protected bool CheckDefaultMovePostion(eFile file, int rank)
         {
+            if (File == file && Rank == rank) return false;
             if (file < eFile.a || eFile.h < file) return false;
             if (rank < 1 || 8 < rank) return false;
-            if (File == file && Rank == rank) return false;
 
             return true;
         }
@@ -103,11 +102,11 @@ namespace ChessProject
             else
             {
                 if (Rank <= rank) return false;
-                if (rank < Rank - 2) return false;
+                if (Rank - 2 > rank) return false;
                 if (File + 1 < file || File - 1 > file) return false;
                 if ((File + 1 == file || File - 1 == file) && (rank == Rank - 2)) return false;
 
-                if (rank == Rank - 2)
+                if (Rank - 2 == rank)
                 {
                     if (Rank != Board.PAWN_B_START_HEIGHT)
                     {
@@ -125,16 +124,27 @@ namespace ChessProject
             {
                 if (Color == eColor.White && Rank + 1 == rank)
                 {
+                    list.RemoveAll(l => l.Item1 == File && l.Item2 > Rank);
+                }
+                
+                if (Color == eColor.Black && Rank - 1 == rank)
+                {
+                    list.RemoveAll(l => l.Item1 == File && l.Item2 < Rank);
+                }
+
+                if (Color == eColor.White && Rank + 2 == rank)
+                {
                     list.RemoveAll(l => l.Item1 == File && l.Item2 > Rank + 1);
                 }
-                else if (Color == eColor.Black && Rank - 1 == rank)
+
+                if (Color == eColor.Black && Rank - 2 == rank)
                 {
                     list.RemoveAll(l => l.Item1 == File && l.Item2 < Rank - 1);
                 }
             }
         }
 
-        public override void NeedTargetPiece(List<(eFile, int)> list, eFile file, int rank)
+        public override void NeedEnemyPiece(List<(eFile, int)> list, eFile file, int rank)
         {
             if (m_file == file) return;
 
@@ -143,6 +153,7 @@ namespace ChessProject
 
         public void Promotion()
         {
+
         }
     }
 
@@ -373,6 +384,13 @@ namespace ChessProject
             if (!CheckDefaultMovePostion(file, rank)) return false;
             if (File + 1 < file || Rank + 1 < rank) return false;
             if (File - 1 > file || Rank - 1 > rank) return false;
+
+            return true;
+        }
+
+        public override bool IsInChecked()
+        {
+            Console.WriteLine($"{Color} is checked");
 
             return true;
         }
