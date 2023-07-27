@@ -18,18 +18,6 @@ namespace ChessProject
         public Board()
         {
             PlaceDefaultPosition();
-
-            m_turn.Enqueue(eColor.White);
-            m_turn.Enqueue(eColor.Black);
-        }
-
-        private void PlaceDefaultPosition()
-        {
-            for (var color = eColor.White; color < eColor.Max; color++)
-            {
-                for (int width = 0; width < MAX_BOARD_WIDTH; width++)
-                {
-                    AddPiece(new Pawn(color, (eFile)width, PAWN_W_START_HEIGHT + (5 * (int)color)));
                 }
 
                 AddPiece(new Rook(color, eFile.a, 1 + (PAWN_B_START_HEIGHT * (int)color)));
