@@ -1,37 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 
 namespace ChessProject
 {
+    public static class QueueExtensions
+    {
+        public static void Add<T>(this Queue<T> queue, T item)
+        {
+            queue.Enqueue(item);
+        }
+    }
+
     class Board
     {
-        public const int PAWN_W_START_HEIGHT = 2;
-        public const int PAWN_B_START_HEIGHT = 7;
+        public const int START_RANK = 1;
+        public const int END_RANK = 8;
+        public const int PAWN_W_START_RANK = 2;
+        public const int PAWN_B_START_RANK = 7;
         private const int MAX_BOARD_WIDTH = 8;
 
         private List<Piece> m_pieces = new ();
         protected Stack<(eFile, int, Piece)> m_history = new ();
-        private Queue<eColor> m_turn = new();
+        private Queue<eColor> m_turn = new Queue<eColor> { eColor.White, eColor.Black };
 
         public Board()
         {
             PlaceDefaultPosition();
-                }
-
-                AddPiece(new Rook(color, eFile.a, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Rook(color, eFile.h, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-
-                AddPiece(new Knight(color, eFile.b, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Knight(color, eFile.g, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-
-                AddPiece(new Bishop(color, eFile.c, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new Bishop(color, eFile.f, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-
-                AddPiece(new Queen(color, eFile.d, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-                AddPiece(new King(color, eFile.e, 1 + (PAWN_B_START_HEIGHT * (int)color)));
-            }
         }
 
         private bool AddPiece<T>(T piece) where T : Piece
@@ -50,21 +47,13 @@ namespace ChessProject
             return true;
         }
 
-        public Piece GetPiece(eFile file, int rank)
+        private Piece GetPiece(eFile file, int rank)
         {
             return m_pieces.SingleOrDefault(p => p.File == file && p.Rank == rank);
         }
 
         public bool MovePiece<T>(T piece, eFile targetFile, int targetRank) where T : Piece
         {
-            var sameColorPiece = m_pieces
-                .Where(p => p.Color == piece.Color)
-                .SingleOrDefault(p => p.File == targetFile && p.Rank == targetRank);
-            if (sameColorPiece != null)
-            {
-                return false;
-            }
-
             if (!piece.Move(targetFile, targetRank))
             {
                 return false;
@@ -75,6 +64,8 @@ namespace ChessProject
             {
                 return false;
             }
+
+            piece.AddMoveCount();
 
             m_history.Push((piece.File, piece.Rank, piece));
 
@@ -93,6 +84,29 @@ namespace ChessProject
             }
 
             return true;
+        }
+
+        private void PlaceDefaultPosition()
+        {
+            for (var color = eColor.White; color < eColor.Max; color++)
+            {
+                for (int width = 0; width < MAX_BOARD_WIDTH; width++)
+                {
+                    AddPiece(new Pawn(color, (eFile)width, PAWN_W_START_RANK + (5 * (int)color)));
+                }
+
+                AddPiece(new Rook(color, eFile.a, 1 + (PAWN_B_START_RANK * (int)color)));
+                AddPiece(new Rook(color, eFile.h, 1 + (PAWN_B_START_RANK * (int)color)));
+
+                AddPiece(new Knight(color, eFile.b, 1 + (PAWN_B_START_RANK * (int)color)));
+                AddPiece(new Knight(color, eFile.g, 1 + (PAWN_B_START_RANK * (int)color)));
+
+                AddPiece(new Bishop(color, eFile.c, 1 + (PAWN_B_START_RANK * (int)color)));
+                AddPiece(new Bishop(color, eFile.f, 1 + (PAWN_B_START_RANK * (int)color)));
+
+                AddPiece(new Queen(color, eFile.d, 1 + (PAWN_B_START_RANK * (int)color)));
+                AddPiece(new King(color, eFile.e, 1 + (PAWN_B_START_RANK * (int)color)));
+            }
         }
 
         private void GetAttackArea(eFile width, int height)
@@ -119,17 +133,24 @@ namespace ChessProject
             }
 
             var resultArea = canMoveArea.ToList();
+            piece.AdditionalMoveArea(resultArea, m_pieces);
+            piece.ExceptAttackedArea(resultArea, GetTotalMoveArea);
 
             foreach (var area in canMoveArea)
             {
                 var occupiedPiece = GetPiece(area.Item1, area.Item2);
                 if (occupiedPiece != null)
                 {
-                    piece.CalcBlockedArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
+                    if (occupiedPiece.Color == piece.Color)
+                    {
+                        resultArea.Remove(new (occupiedPiece.File, occupiedPiece.Rank));
+                    }
+
+                    piece.ExceptBlockArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
                 }
                 else
                 {
-                    piece.NeedEnemyPiece(resultArea, area.Item1, area.Item2);
+                    piece.ExceptEmptyArea(resultArea, area.Item1, area.Item2);
                 }
             }
 
@@ -164,11 +185,11 @@ namespace ChessProject
                     var occupiedPiece = GetPiece(area.Item1, area.Item2);
                     if (occupiedPiece != null)
                     {
-                        piece.CalcBlockedArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
+                        piece.ExceptBlockArea(resultArea, occupiedPiece.File, occupiedPiece.Rank);
                     }
                     else
                     {
-                        piece.NeedEnemyPiece(resultArea, area.Item1, area.Item2);
+                        piece.ExceptEmptyArea(resultArea, area.Item1, area.Item2);
                     }
                 }
 
@@ -184,7 +205,7 @@ namespace ChessProject
                 .Where(p => p.Color != color)
                 .Where(p => areas.Any(a => a.Item1 == p.File && a.Item2 == p.Rank));
 
-            return attackedPieces.Any(t => t.IsInChecked());
+            return attackedPieces.Any(t => t.IsCheck());
         }
 
         private void IsCheckMate()
@@ -261,20 +282,20 @@ namespace ChessProject
             }
         }
 
-        private (eFile, int, eFile, int) InputDecoder(string input)
+        private (eFile srcFile, int srcRank, eFile dstFile, int dstRank) InputDecoder(string input)
         {
-            Func<char, int> fileDecoder = file =>
+            Func<char, eFile> fileDecoder = file =>
             {
                 return file switch
                 {
-                    'a' => 0,
-                    'b' => 1,
-                    'c' => 2,
-                    'd' => 3,
-                    'e' => 4,
-                    'f' => 5,
-                    'g' => 6,
-                    'h' => 7,
+                    'a' => eFile.a,
+                    'b' => eFile.b,
+                    'c' => eFile.c,
+                    'd' => eFile.d,
+                    'e' => eFile.e,
+                    'f' => eFile.f,
+                    'g' => eFile.g,
+                    'h' => eFile.h,
                     _ => throw new ArgumentException($"invalid input. {input}"),
                 };
             };
@@ -282,17 +303,28 @@ namespace ChessProject
             var file = fileDecoder(input[0]);
             var newFile = fileDecoder(input[2]);
 
-            if (!Int32.TryParse(input[1].ToString(), out var rank))
+            if (!int.TryParse(input[1].ToString(), out var rank))
             {
                 throw new ArgumentException($"invalid input. {input}");
             }
 
-            if (!Int32.TryParse(input[3].ToString(), out var newRank))
+            if (!int.TryParse(input[3].ToString(), out var newRank))
             {
                 throw new ArgumentException($"invalid input. {input}");
             }
 
-            return ((eFile)file, rank, (eFile)newFile, newRank);
+            return (file, rank, newFile, newRank);
+        }
+
+        private void Reset()
+        {
+            m_pieces.Clear();
+            m_history.Clear();
+            m_turn.Clear();
+            m_turn.Enqueue(eColor.White);
+            m_turn.Enqueue(eColor.Black);
+
+            PlaceDefaultPosition();
         }
 
         public void Run()
@@ -309,34 +341,40 @@ namespace ChessProject
                     if (input == "exit" || input == "EXIT") break;
                     if (input.Length < 4 || 4 < input.Length) continue;
 
-                    var pos = InputDecoder(input);
+                    var position = InputDecoder(input);
 
-                    var controlPiece = GetPiece(pos.Item1, pos.Item2);
-                    if (controlPiece != null)
+                    var piece = GetPiece(position.srcFile, position.srcRank);
+                    if (piece != null)
                     {
-                        if (controlPiece.Color != m_turn.Peek())
+                        if (piece.Color != m_turn.Peek())
                         {
                             Console.WriteLine($"invalid turn. {m_turn.Peek()} is turn.");
                             //continue;
                         }
 
-                        if (!MovePiece(controlPiece, pos.Item3, pos.Item4))
+                        if (!MovePiece(piece, position.dstFile, position.dstRank))
                         {
-                            Console.WriteLine($"moved failed {controlPiece.File}{controlPiece.Rank} -> {pos.Item3}{pos.Item4}");
+                            Console.WriteLine($"moved failed {piece.File}{piece.Rank} -> {position.dstFile}{position.dstRank}");
                             continue;
                         }
 
-                        var colorArea = GetTotalMoveArea(controlPiece.Color);
+                        if (piece.CanPromote())
+                        {
+                            m_pieces.Remove(piece);
+                            m_pieces.Add(new Queen(piece.Color, piece.File, piece.Rank));
+                        }
+
+                        var colorArea = GetTotalMoveArea(piece.Color);
                         PrintAttackArea(colorArea);
 
-                        if (IsCheck(controlPiece.Color, colorArea))
+                        if (IsCheck(m_turn.Peek(), colorArea))
                         {
 
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"move failed {pos.Item1}{pos.Item2}. invalid piece.");
+                        Console.WriteLine($"missing piece. {position.Item1}{position.Item2}");
                         continue;
                     }
                 }
@@ -344,8 +382,6 @@ namespace ChessProject
                 {
                     Console.WriteLine($"{e.GetType().Name}: {e.Message}");
                 }
-
-                //ShowAttackArea(targetPiece.File, targetPiece.Rank);
 
                 var color = m_turn.Dequeue();
                 m_turn.Enqueue(color);

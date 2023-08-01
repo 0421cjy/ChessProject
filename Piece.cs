@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ChessProject
 {
@@ -29,6 +30,7 @@ namespace ChessProject
         private string m_symbol;
         protected eFile m_file;
         protected int m_rank;
+        protected int m_moveCount;
 
         public eColor Color => m_color;
         public eFile File => m_file;
@@ -37,7 +39,7 @@ namespace ChessProject
 
         public eFile SetFile 
         { 
-            set { m_file = value; } 
+            set { m_file = value; }
         }
 
         public int SetRank
@@ -51,12 +53,16 @@ namespace ChessProject
             m_file = file;
             m_rank = rank;
             m_symbol = symbol;
+            m_moveCount = 0;
         }
 
         public abstract bool Move(eFile file, int rank);
-        public virtual void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank) { }
-        public virtual void NeedEnemyPiece(List<(eFile, int)> list, eFile file, int rank) { }
-        public virtual bool IsInChecked() { return false; }
+        public virtual void ExceptBlockArea(List<(eFile, int)> moveList, eFile file, int rank) { }
+        public virtual void ExceptEmptyArea(List<(eFile, int)> moveList, eFile emptyFile, int emptyRank) { }
+        public virtual bool CanPromote() { return false; }
+        public virtual bool IsCheck() { return false; }
+        public virtual void AdditionalMoveArea(List<(eFile, int)> moveList, List<Piece> pieceList) { }
+        public virtual void ExceptAttackedArea(List<(eFile, int)> moveList, Func<eColor, List<(eFile, int)>> func) { }
 
         protected bool CheckDefaultMovePostion(eFile file, int rank)
         {
@@ -66,6 +72,9 @@ namespace ChessProject
 
             return true;
         }
+
+        public void AddMoveCount() { m_moveCount++; }
+        public bool IsFirstMove() { return m_moveCount == 0; }
 
         public override string ToString()
         {
@@ -90,35 +99,25 @@ namespace ChessProject
                 if (Rank + 2 < rank) return false;
                 if (File + 1 < file || File - 1 > file) return false;
                 if ((File + 1 == file || File - 1 == file) && (rank == Rank + 2)) return false;
-
-                if (rank == Rank + 2)
-                {
-                    if (Rank != Board.PAWN_W_START_HEIGHT)
-                    {
-                        return false;
-                    }
-                }
             }
-            else
+
+            if (Color == eColor.Black)
             {
                 if (Rank <= rank) return false;
                 if (Rank - 2 > rank) return false;
                 if (File + 1 < file || File - 1 > file) return false;
                 if ((File + 1 == file || File - 1 == file) && (rank == Rank - 2)) return false;
+            }
 
-                if (Rank - 2 == rank)
-                {
-                    if (Rank != Board.PAWN_B_START_HEIGHT)
-                    {
-                        return false;
-                    }
-                }
+            if (rank == Rank + 2 || Rank - 2 == rank)
+            {
+                if (m_moveCount != 0) return false;
             }
 
             return true;
         }
 
-        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file)
             {
@@ -144,16 +143,19 @@ namespace ChessProject
             }
         }
 
-        public override void NeedEnemyPiece(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptEmptyArea(List<(eFile, int)> list, eFile emptyFile, int emptyRank)
         {
-            if (m_file == file) return;
+            if (m_file == emptyFile) return;
 
-            list.RemoveAll(l => l.Item1 == file && l.Item2 == rank);
+            list.RemoveAll(l => l.Item1 == emptyFile && l.Item2 == emptyRank);
         }
 
-        public void Promotion()
+        public override bool CanPromote()
         {
+            if (Color == eColor.White && Rank == Board.END_RANK) return true;
+            if (Color == eColor.Black && Rank == Board.START_RANK) return true;
 
+            return false;
         }
     }
 
@@ -210,7 +212,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             for (var i = 1; i < 9 - Rank; i++)
             {
@@ -255,7 +257,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
@@ -316,7 +318,7 @@ namespace ChessProject
             return false;
         }
 
-        public override void CalcBlockedArea(List<(eFile, int)> list, eFile file, int rank)
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
         {
             if (File == file && Rank == rank) return;
 
@@ -382,17 +384,58 @@ namespace ChessProject
         public override bool Move(eFile file, int rank)
         {
             if (!CheckDefaultMovePostion(file, rank)) return false;
-            if (File + 1 < file || Rank + 1 < rank) return false;
-            if (File - 1 > file || Rank - 1 > rank) return false;
+            if (File + 2 < file || Rank + 1 < rank) return false;
+            if (File - 2 > file || Rank - 1 > rank) return false;
+            if ((File + 2 == file || File - 2 == file) && (Rank + 1 == rank || Rank - 1 == rank)) return false;
+
+            if (0 < m_moveCount)
+            {
+                if (File + 1 < file || File - 1 > file) return false;
+            }
 
             return true;
         }
 
-        public override bool IsInChecked()
+        public override void ExceptBlockArea(List<(eFile, int)> list, eFile file, int rank)
+        {
+
+        }
+
+        public override bool IsCheck()
         {
             Console.WriteLine($"{Color} is checked");
 
             return true;
+        }
+
+        public override void AdditionalMoveArea(List<(eFile, int)> moveList, List<Piece> pieceList)
+        {
+            if (m_moveCount != 0) return;
+
+            var rookList = pieceList.Where(p => p.Color == Color && p.Rank == Rank && p.IsFirstMove()).ToList();
+            foreach (var rook in rookList)
+            {
+                if (File < rook.File)
+                {
+                    moveList.Add((File + 2, Rank));
+                }
+
+                if (File > rook.File)
+                {
+                    moveList.Add((File - 2, Rank));
+                }
+            }
+        }
+
+        public override void ExceptAttackedArea(List<(eFile, int)> moveList, Func<eColor, List<(eFile, int)>> func)
+        {
+            var attackList = func(Color == eColor.White ? eColor.Black : eColor.White);
+            moveList.RemoveAll(m => attackList.Any(e => e.Item1 == m.Item1 && e.Item2 == m.Item2));
+
+            foreach (var attack in attackList)
+            {
+                ExceptBlockArea(moveList, attack.Item1, attack.Item2);
+            }
         }
     }
 }
